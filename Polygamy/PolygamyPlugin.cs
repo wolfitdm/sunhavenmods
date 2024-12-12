@@ -21,6 +21,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using System.Collections;
+using System.IO;
 
 
 namespace Polygamy;
@@ -33,26 +34,21 @@ public class PolygamyPlugin : BaseUnityPlugin
     private const string pluginVersion = "0.0.4";
     private Harmony m_harmony = new Harmony(pluginGuid);
     public static ManualLogSource logger;
-	public ConfigEntry<bool> configPolyGamyModMarryEveryoneAgain = null;
-    private static PolygamyPlugin singleton = null;
 
     private void Awake()
     {
         // Plugin startup logic
         PolygamyPlugin.logger = this.Logger;
         logger.LogInfo((object)$"Plugin {pluginName} is loaded!");
-        this.configPolyGamyModMarryEveryoneAgain = this.Config.Bind("General.Toggles",
-                                            "polyGamyModMarryEveryoneAgain",
-                                            false,
-                                            "Whether or not to marriage everyone again?");
-        singleton = this;
         this.m_harmony.PatchAll();
     }
 
     [HarmonyPatch(typeof(NPCAI), "HandleWeddingRing")]
     class HarmonyPatch_NPCAI_HandleWeddingRing
     {
-		private static bool Prefix(ref string __result, out bool response, NPCAI __instance, ref string ____npcName)
+        private static ConfigFile polyGamyModMarryEveryoneAgainConfig = new ConfigFile(Path.Combine(Paths.ConfigPath, "vurawnica.updatedby.werri.sunhaven.polygamy.cfg"), true);
+		private static ConfigEntry<bool> polyGamyModMarryEveryoneAgain = polyGamyModMarryEveryoneAgainConfig.Bind("General.Toggles", "polyGamyModMarryEveryoneAgain", true, "Whether or not to marriage everyone again?");
+        private static bool Prefix(ref string __result, out bool response, NPCAI __instance, ref string ____npcName)
         {
             response = false;
             bool flag = false;
@@ -340,10 +336,12 @@ public class PolygamyPlugin : BaseUnityPlugin
 			NPCAI instanceParam = __instance;
             string npcNameParam = ____npcName;
             string ret = "";
-            bool _configMarryEveryoneAgain = singleton != null ? singleton.configPolyGamyModMarryEveryoneAgain.Value : true;
+            bool _configMarryEveryoneAgain = polyGamyModMarryEveryoneAgain.Value;
 			if (_configMarryEveryoneAgain) {
+				PolygamyPlugin.logger.LogInfo("[PolygamyMod v0.0.4] call postFixMarryOneAgain function!");
 				ret = _Postfix_MarryEveryoneAgain(resultParam, out responseParam, instanceParam, ref npcNameParam);
 			} else {
+				PolygamyPlugin.logger.LogInfo("[PolygamyMod v0.0.4] call postFixOriginal function!");
 				ret = _Postfix_Original(resultParam, out responseParam, instanceParam, ref npcNameParam);
 			}
             __result = resultParam;
