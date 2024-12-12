@@ -33,12 +33,19 @@ public class PolygamyPlugin : BaseUnityPlugin
     private const string pluginVersion = "0.0.4";
     private Harmony m_harmony = new Harmony(pluginGuid);
     public static ManualLogSource logger;
+	public ConfigEntry<bool> configPolyGamyModMarryEveryoneAgain = null;
+    private static PolygamyPlugin singleton = null;
 
     private void Awake()
     {
         // Plugin startup logic
         PolygamyPlugin.logger = this.Logger;
         logger.LogInfo((object)$"Plugin {pluginName} is loaded!");
+        this.configPolyGamyModMarryEveryoneAgain = this.Config.Bind("General.Toggles",
+                                            "polyGamyModMarryEveryoneAgain",
+                                            false,
+                                            "Whether or not to marriage everyone again?");
+        singleton = this;
         this.m_harmony.PatchAll();
     }
 
@@ -324,7 +331,29 @@ public class PolygamyPlugin : BaseUnityPlugin
 
             }
         }
-        private static string Postfix(string __result, out bool response, NPCAI __instance, ref string ____npcName)
+		
+		private static string Postfix(string __result, out bool response, NPCAI __instance, ref string ____npcName)
+	    {
+            response = false;
+			string resultParam = __result;
+			bool responseParam = response;
+			NPCAI instanceParam = __instance;
+            string npcNameParam = ____npcName;
+            string ret = "";
+            bool _configMarryEveryoneAgain = singleton != null ? singleton.configPolyGamyModMarryEveryoneAgain.Value : true;
+			if (_configMarryEveryoneAgain) {
+				ret = _Postfix_MarryEveryoneAgain(resultParam, out responseParam, instanceParam, ref npcNameParam);
+			} else {
+				ret = _Postfix_Original(resultParam, out responseParam, instanceParam, ref npcNameParam);
+			}
+            __result = resultParam;
+            response = responseParam;
+			__instance = instanceParam;
+			____npcName = npcNameParam;
+			return ret;
+		}
+   
+        private static string _Postfix_Original(string __result, out bool response, NPCAI __instance, ref string ____npcName)
         {
             response = false;
             bool flag = false;
@@ -555,6 +584,341 @@ public class PolygamyPlugin : BaseUnityPlugin
                     return "Oh! Heh, I really shouldn't be surprised. Actually, what's really surprising is... I don't think it's a bad idea. Sure, let's do it, XX![]We should do it at 4pm tomorrow at the event center! I'll take care of everything else, you just show up!";
             }
         }
+    }
+	
+	private static string _Postfix_MarryEveryoneAgain(
+      string __result,
+      out bool response,
+      NPCAI __instance,
+      ref string ____npcName)
+    {
+      response = false;
+      bool flag = false;
+      string str = "";
+      if (SingletonBehaviour<GameSave>.Instance.GetProgressBoolCharacter("MarriedTo" + ____npcName))
+      {
+        flag = true;
+        switch (____npcName)
+        {
+          case "Anne":
+            SingletonBehaviour<GameSave>.Instance.SetProgressBoolCharacter("EngagedToRNPC", true);
+            Player.Instance.QuestList.StartQuest("AnneMarriageQuest", false);
+            Player.Instance.Inventory.RemoveItem(6107, 1, 0);
+            response = true;
+            str = "I don't know if this is a little joke or not, but the gesture is really cute. And of course, I'd be happy to take a second ring! [] I'll pay for someone to arrange the ceremony, you just meet me at the event square tomorrow at 4:00 pm.";
+            break;
+          case "Catherine":
+            SingletonBehaviour<GameSave>.Instance.SetProgressBoolCharacter("EngagedToRNPC", true);
+            Player.Instance.QuestList.StartQuest("CatherineMarriageQuest", false);
+            Player.Instance.Inventory.RemoveItem(6107, 1, 0);
+            response = true;
+            str = "A vow renewal? That's a great idea! I'll take care of everything, you just show up, my dear!";
+            break;
+          case "Claude":
+            SingletonBehaviour<GameSave>.Instance.SetProgressBoolCharacter("EngagedToRNPC", true);
+            Player.Instance.QuestList.StartQuest("ClaudeMarriageQuest", false);
+            Player.Instance.Inventory.RemoveItem(6107, 1, 0);
+            response = true;
+            str = "A vow renewal? That's a great idea! I'll take care of everything, you just show up, my dear!";
+            break;
+          case "Darius":
+            SingletonBehaviour<GameSave>.Instance.SetProgressBoolCharacter("EngagedToRNPC", true);
+            Player.Instance.QuestList.StartQuest("DariusMarriageQuest", false);
+            Player.Instance.Inventory.RemoveItem(6107, 1, 0);
+            response = true;
+            str = "A vow renewal? That's a great idea! I'll take care of everything, you just show up, my dear!";
+            break;
+          case "Donovan":
+            SingletonBehaviour<GameSave>.Instance.SetProgressBoolCharacter("EngagedToRNPC", true);
+            Player.Instance.QuestList.StartQuest("DonovanMarriageQuest", false);
+            Player.Instance.Inventory.RemoveItem(6107, 1, 0);
+            response = true;
+            str = "A vow renewal? That's a great idea! I'll take care of everything, you just show up, my dear!";
+            break;
+          case "Iris":
+            SingletonBehaviour<GameSave>.Instance.SetProgressBoolCharacter("EngagedToRNPC", true);
+            Player.Instance.QuestList.StartQuest("IrisMarriageQuest", false);
+            Player.Instance.Inventory.RemoveItem(6107, 1, 0);
+            response = true;
+            str = "A vow renewal? That's a great idea! I'll take care of everything, you just show up, my dear!";
+            break;
+          case "Jun":
+            SingletonBehaviour<GameSave>.Instance.SetProgressBoolCharacter("EngagedToRNPC", true);
+            Player.Instance.QuestList.StartQuest("JunMarriageQuest", false);
+            Player.Instance.Inventory.RemoveItem(6107, 1, 0);
+            response = true;
+            str = "A vow renewal? That's a great idea! I'll take care of everything, you just show up, my dear!";
+            break;
+          case "Kai":
+            SingletonBehaviour<GameSave>.Instance.SetProgressBoolCharacter("EngagedToRNPC", true);
+            Player.Instance.QuestList.StartQuest("KaiMarriageQuest", false);
+            Player.Instance.Inventory.RemoveItem(6107, 1, 0);
+            response = true;
+            str = "A vow renewal? That's a great idea! I'll take care of everything, you just show up, my dear!";
+            break;
+          case "Karish":
+            SingletonBehaviour<GameSave>.Instance.SetProgressBoolCharacter("EngagedToRNPC", true);
+            Player.Instance.QuestList.StartQuest("KarishMarriageQuest", false);
+            Player.Instance.Inventory.RemoveItem(6107, 1, 0);
+            response = true;
+            str = "A vow renewal? That's a great idea! I'll take care of everything, you just show up, my dear!";
+            break;
+          case "Kitty":
+            SingletonBehaviour<GameSave>.Instance.SetProgressBoolCharacter("EngagedToRNPC", true);
+            Player.Instance.QuestList.StartQuest("KittyMarriageQuest", false);
+            Player.Instance.Inventory.RemoveItem(6107, 1, 0);
+            response = true;
+            str = "A vow renewal? That's a great idea! I'll take care of everything, you just show up, my dear!";
+            break;
+          case "Liam":
+            SingletonBehaviour<GameSave>.Instance.SetProgressBoolCharacter("EngagedToRNPC", true);
+            Player.Instance.QuestList.StartQuest("LiamMarriageQuest", false);
+            Player.Instance.Inventory.RemoveItem(6107, 1, 0);
+            response = true;
+            str = "A vow renewal? That's a great idea! I'll take care of everything, you just show up, my dear!";
+            break;
+          case "Lucia":
+            SingletonBehaviour<GameSave>.Instance.SetProgressBoolCharacter("EngagedToRNPC", true);
+            Player.Instance.QuestList.StartQuest("LuciaMarriageQuest", false);
+            Player.Instance.Inventory.RemoveItem(6107, 1, 0);
+            response = true;
+            str = "A vow renewal? That's a great idea! I'll take care of everything, you just show up, my dear!";
+            break;
+          case "Lucius":
+            SingletonBehaviour<GameSave>.Instance.SetProgressBoolCharacter("EngagedToRNPC", true);
+            Player.Instance.QuestList.StartQuest("LuciusMarriageQuest", false);
+            Player.Instance.Inventory.RemoveItem(6107, 1, 0);
+            response = true;
+            str = "A vow renewal? That's a great idea! I'll take care of everything, you just show up, my dear!";
+            break;
+          case "Lynn":
+            SingletonBehaviour<GameSave>.Instance.SetProgressBoolCharacter("EngagedToRNPC", true);
+            Player.Instance.QuestList.StartQuest("LynnMarriageQuest", false);
+            Player.Instance.Inventory.RemoveItem(6107, 1, 0);
+            response = true;
+            str = "Hehe, you want to get married again?? That's cute sweetie. Sure, let's do it, XX![]We should do it at 4pm tomorrow at the event center! I'll take care of everything else, you just show up!";
+            break;
+          case "Miyeon":
+            SingletonBehaviour<GameSave>.Instance.SetProgressBoolCharacter("EngagedToRNPC", true);
+            Player.Instance.QuestList.StartQuest("MiyeonMarriageQuest", false);
+            Player.Instance.Inventory.RemoveItem(6107, 1, 0);
+            response = true;
+            str = "A vow renewal? That's a great idea! I'll take care of everything, you just show up, my dear!";
+            break;
+          case "Nathaniel":
+            SingletonBehaviour<GameSave>.Instance.SetProgressBoolCharacter("EngagedToRNPC", true);
+            Player.Instance.QuestList.StartQuest("NathanielMarriageQuest", false);
+            Player.Instance.Inventory.RemoveItem(6107, 1, 0);
+            response = true;
+            str = "A vow renewal? That's a great idea! I'll take care of everything, you just show up, my dear!";
+            break;
+          case "Shang":
+            SingletonBehaviour<GameSave>.Instance.SetProgressBoolCharacter("EngagedToRNPC", true);
+            Player.Instance.QuestList.StartQuest("ShangMarriageQuest", false);
+            Player.Instance.Inventory.RemoveItem(6107, 1, 0);
+            response = true;
+            str = "A vow renewal? That's a great idea! I'll take care of everything, you just show up, my dear!";
+            break;
+          case "Vaan":
+            SingletonBehaviour<GameSave>.Instance.SetProgressBoolCharacter("EngagedToRNPC", true);
+            Player.Instance.QuestList.StartQuest("VaanMarriageQuest", false);
+            Player.Instance.Inventory.RemoveItem(6107, 1, 0);
+            response = true;
+            str = "A vow renewal? That's a great idea! I'll take care of everything, you just show up, my dear!";
+            break;
+          case "Vivi":
+            SingletonBehaviour<GameSave>.Instance.SetProgressBoolCharacter("EngagedToRNPC", true);
+            Player.Instance.QuestList.StartQuest("ViviMarriageQuest", false);
+            Player.Instance.Inventory.RemoveItem(6107, 1, 0);
+            response = true;
+            str = "A vow renewal? That's a great idea! I'll take care of everything, you just show up, my dear!";
+            break;
+          case "Wesley":
+            SingletonBehaviour<GameSave>.Instance.SetProgressBoolCharacter("EngagedToRNPC", true);
+            Player.Instance.QuestList.StartQuest("WesleyMarriageQuest", false);
+            Player.Instance.Inventory.RemoveItem(6107, 1, 0);
+            response = true;
+            str = "A vow renewal? That's a great idea! I'll take care of everything, you just show up, my dear!";
+            break;
+          case "Wornhardt":
+            SingletonBehaviour<GameSave>.Instance.SetProgressBoolCharacter("EngagedToRNPC", true);
+            Player.Instance.QuestList.StartQuest("WornhardtMarriageQuest", false);
+            Player.Instance.Inventory.RemoveItem(6107, 1, 0);
+            response = true;
+            str = "A vow renewal? That's a great idea! I'll take care of everything, you just show up, my dear!";
+            break;
+          case "Xyla":
+            SingletonBehaviour<GameSave>.Instance.SetProgressBoolCharacter("EngagedToRNPC", true);
+            Player.Instance.QuestList.StartQuest("XylaMarriageQuest", false);
+            Player.Instance.Inventory.RemoveItem(6107, 1, 0);
+            response = true;
+            str = "A vow renewal? That's a great idea! I'll take care of everything, you just show up, my dear!";
+            break;
+          case "Zaria":
+            SingletonBehaviour<GameSave>.Instance.SetProgressBoolCharacter("EngagedToRNPC", true);
+            Player.Instance.QuestList.StartQuest("ZariaMarriageQuest", false);
+            Player.Instance.Inventory.RemoveItem(6107, 1, 0);
+            response = true;
+            str = "A vow renewal? That's a great idea! I'll take care of everything, you just show up, my dear!";
+            break;
+        }
+        if (flag)
+          return str + "[]<i>(There might be an error message here, just ignore that. You should have started the Marriage Quest again)</i>";
+      }
+      else
+      {
+        float num;
+        if (!SingletonBehaviour<GameSave>.Instance.GetProgressBoolCharacter("Dating" + ____npcName) || !SingletonBehaviour<GameSave>.Instance.GetProgressBoolCharacter(____npcName + " Cycle 14") || !SingletonBehaviour<GameSave>.Instance.CurrentSave.characterData.Relationships.TryGetValue(____npcName, out num) || (double) num < 75.0)
+        {
+          flag = true;
+          switch (____npcName)
+          {
+            case "Anne":
+              str = "Who do I look like to you? I'm a merchant, not a farm wife. I love the ring, but it's going to take more effort on your part before I say yes.";
+              break;
+            case "Catherine":
+              str = "";
+              break;
+            case "Claude":
+              str = "";
+              break;
+            case "Darius":
+              str = "";
+              break;
+            case "Donovan":
+              str = "";
+              break;
+            case "Iris":
+              str = "";
+              break;
+            case "Jun":
+              str = "";
+              break;
+            case "Kai":
+              str = "";
+              break;
+            case "Kitty":
+              str = "";
+              break;
+            case "Liam":
+              str = "";
+              break;
+            case "Lucia":
+              str = "";
+              break;
+            case "Lucius":
+              str = "";
+              break;
+            case "Lynn":
+              str = "Oh - wow! I'm so sorry XX, but I don't think I'm quite ready for that. We should get to know each other better first, right?";
+              break;
+            case "Miyeon":
+              str = "";
+              break;
+            case "Nathaniel":
+              str = "";
+              break;
+            case "Shang":
+              str = "";
+              break;
+            case "Vaan":
+              str = "";
+              break;
+            case "Vivi":
+              str = "";
+              break;
+            case "Wesley":
+              str = "";
+              break;
+            case "Wornhardt":
+              str = "";
+              break;
+            case "Xyla":
+              str = "";
+              break;
+          }
+        }
+      }
+      if (flag)
+        return str + "[]<i>(You must be dating this character, achieved 15 full hearts, and progressed far enough in the dialogue to marry them)</i>";
+      if (SingletonBehaviour<GameSave>.Instance.GetProgressBoolCharacter("Married"))
+        Player.Instance.Inventory.RemoveItem(6107, 1, 0);
+      response = true;
+      SingletonBehaviour<GameSave>.Instance.SetProgressBoolCharacter("EngagedToRNPC", true);
+      switch (____npcName)
+      {
+        case "Anne":
+          Player.Instance.QuestList.StartQuest("AnneMarriageQuest", false);
+          return "Heh, it's about time my investment paid off. What do you mean \"what investment?\" I'm talking about <i>you</i>, XX![]Of course I'll marry you! I'll pay for someone to arrange the ceremony, you just meet me at the event square tomorrow at 4:00 pm.";
+        case "Catherine":
+          Player.Instance.QuestList.StartQuest("CatherineMarriageQuest", false);
+          return "I've been dreaming of the moment! I thought I'd be prepared for it, but now I feel like I'm floating.[]Of course I'll marry you, XX!! I'll prepare the ceremony, you just meet me at the event square tomorrow at 4:00 pm.";
+        case "Claude":
+          Player.Instance.QuestList.StartQuest("ClaudeMarriageQuest", false);
+          return "Marriage? With me? I never thought... Well, I guess it doesn't matter what I thought now.[]Yes, of course I will marry you, XX. I'll pay for somebody to set up the ceremony in the event square. Be there tomorrow at 4:00 pm. I really can't wait!";
+        case "Darius":
+          Player.Instance.QuestList.StartQuest("DariusMarriageQuest", false);
+          return "It's about time you asked, XX. I was growing impatient, but now you can take your proper place by the side of Withergate's future king.[]That is to say, I accept your proposal! I'll have some lackeys set up a ceremony tomorrow in your Human town. Be there at 4:00 pm, and don't keep me waiting.";
+        case "Donovan":
+          Player.Instance.QuestList.StartQuest("DonovanMarriageQuest", false);
+          return "Ah, I figured this was coming... Well I won't hold you in suspense.[]Let's do it, XX - let's get married!![]I'll have someone set up a nice little ceremony in your Human town. Just show up at 4:00 pm and I'll take care of the rest!";
+        case "Iris":
+          Player.Instance.QuestList.StartQuest("IrisMarriageQuest", false);
+          return "You're proposing?? Oh - I'm sorry, I was just so unprepared for this.[]...The answer is yes, obviously! I know you'll want it in Sun Haven, so I'll talk to your Archmage to set it up. Just be there tomorrow at 4:00 pm. Ah, this is so exciting!";
+        case "Jun":
+          Player.Instance.QuestList.StartQuest("JunMarriageQuest", false);
+          return "XX! I've pictured this moment so many times... Yes, I will marry you![]Let's have the ceremony tomorrow at 4:00 pm. I'll get the event center all set up, you just need to be there. I'll see you then!";
+        case "Kai":
+          Player.Instance.QuestList.StartQuest("KaiMarriageQuest", false);
+          return "Then let us make a lifetime of memories together, XX. Ones that I can look back on and be happy with.";
+        case "Karish":
+          Player.Instance.QuestList.StartQuest("KarishMarriageQuest", false);
+          return "Marry? Me, and you?! Well, yes! The answer is yes, XX! Of course I'll marry you! Let's do it! You asked me before I could ask you, so it's only fair we do it in your home at Sun Haven!! Don't worry, I'll take care of everything! [] Be prepared by 4:00 pm tomorrow, okay?! You can't be late!";
+        case "Kitty":
+          Player.Instance.QuestList.StartQuest("KittyMarriageQuest", false);
+          return "OH - oh my goodness gracious! XX, I will marry you! Kitty will marry XX, nya nya![]Don't worry, Kitty will get the ceremony set up. You just show up to the event square at 4:00 pm tomorrow! I can't wait!";
+        case "Liam":
+          Player.Instance.QuestList.StartQuest("LiamMarriageQuest", false);
+          return "Ah, wow, this is a lot.[]You know... I think I'm ready for this! Yes XX, let's get married!! I'll see about setting up a ceremony. You just meet me tomorrow at the event square. Let's say 4:00 pm!";
+        case "Lucia":
+          Player.Instance.QuestList.StartQuest("LuciaMarriageQuest", false);
+          return "Oh my goodness!! XX!! Yes, yes <i>of course</i> I'll marry you![]I'll prepare the ceremony for us tomorrow. Try to be at the event square by 4:00 pm! I'm so excited, XX!";
+        case "Lucius":
+          Player.Instance.QuestList.StartQuest("LuciusMarriageQuest", false);
+          return "M-marriage?! Me? I suppose that WOULD make me even happier![] But could you ever imagine me getting married? I never did![] But maybe... there's a first time for everything? Oh, now I'm absolutely shaking with excitement!";
+        case "Lynn":
+          Player.Instance.QuestList.StartQuest("LynnMarriageQuest", false);
+          return "Oh! Heh, I really shouldn't be surprised. Actually, what's really surprising is... I don't think it's a bad idea. Sure, let's do it, XX![]We should do it at 4pm tomorrow at the event center! I'll take care of everything else, you just show up!";
+        case "Miyeon":
+          Player.Instance.QuestList.StartQuest("MiyeonMarriageQuest", false);
+          return "What do you mean, XX? Are you talking about marriage? []...I could be ready for that with you. If you're ready, I mean. Are you ready?[] Ohh, no, don't tell me! I'm going to blush! I-is this really happening?!";
+        case "Nathaniel":
+          Player.Instance.QuestList.StartQuest("NathanielMarriageQuest", false);
+          return "Ah! Heh, it's about time![]Yes XX, I will absolutely marry you! Let me handle the ceremony, you just get yourself to the event square tomorrow at 4:00 pm. I can't wait!";
+        case "Shang":
+          Player.Instance.QuestList.StartQuest("ShangMarriageQuest", false);
+          return "Why shouldn't I be? I feel powerful and alive. I have you, XX. I feel whole. You are the whole, XX.";
+        case "Vaan":
+          Player.Instance.QuestList.StartQuest("VaanMarriageQuest", false);
+          return "Finally! Yes of course we should be married, XX! It makes all the sense in the world.[]We should do it in Sun Haven. I'll see about contacting your Archmage to set up the ceremony. You just make sure you're on time! Let's call it 4:00 pm. I'll see you tomorrow!";
+        case "Vivi":
+          Player.Instance.QuestList.StartQuest("ViviMarriageQuest", false);
+          return "Oh YEAH? Well I'M happy that you're so impressive! You'll never have more passion than a Wildborn like me!!";
+        case "Wesley":
+          Player.Instance.QuestList.StartQuest("WesleyMarriageQuest", false);
+          return "Marriage? You? Me? I... well, yes. Of Course I'll marry you. What? Why do you look so surprised?!?![] Do you think I'm joking?! I'll even make all the arrangements! In Sun Haven, no less! Be ready tomorrow, at 4:00 pm. Make sure to not be late!";
+        case "Wornhardt":
+          Player.Instance.QuestList.StartQuest("WornhardtMarriageQuest", false);
+          return "... Really, do you mean this?[]XX, marrying you would make me the happiest man in town! Yes, let's do it! I'll handle the preparations, you just get yourself to the event square by 4:00 pm tomorrow.";
+        case "Xyla":
+          Player.Instance.QuestList.StartQuest("XylaMarriageQuest", false);
+          return "Oh! Heh, I really shouldn't be surprised. Actually, what's really surprising is... I don't think it's a bad idea. Sure, let's do it, XX![]I'll even set it up for you in your beloved Human town. Let's kick it off at 4:00 pm. Don't be late, sewer rat!";
+        case "Zaria":
+          Player.Instance.QuestList.StartQuest("ZariaMarriageQuest", false);
+          return "This isn't happening. Literally, I'm going crazy. No? It's all real? Great. I don't know if saying \"yes\" is what I <i>should</i> do... But forget being worried. I'm done with it. Yes, XX. Let's do it [] I'll <i>walk</i> into your Sun Haven and take care of all the details myself. Be ready tomorrow at 4 om! Got that?";
+        default:
+          return "Oh! Heh, I really shouldn't be surprised. Actually, what's really surprising is... I don't think it's a bad idea. Sure, let's do it, XX![]We should do it at 4pm tomorrow at the event center! I'll take care of everything else, you just show up!";
+      }
     }
 
     [HarmonyPatch(typeof(NPCAI), "HandleMemoryLossPotion")]
