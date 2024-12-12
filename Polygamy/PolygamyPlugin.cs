@@ -20,7 +20,7 @@ public class PolygamyPlugin : BaseUnityPlugin
 {
     private const string pluginGuid = "vurawnica.sunhaven.polygamy";
     private const string pluginName = "Polygamy";
-    private const string pluginVersion = "0.0.3";
+    private const string pluginVersion = "0.0.4";
     private Harmony m_harmony = new Harmony(pluginGuid);
     public static ManualLogSource logger;
 
@@ -106,6 +106,9 @@ public class PolygamyPlugin : BaseUnityPlugin
                     case "Vivi":
                         text = "";
                         break;
+                    case "Lucius":
+                        text = "";
+                        break;
                 }
             }
             else if
@@ -177,6 +180,9 @@ public class PolygamyPlugin : BaseUnityPlugin
                         text = "";
                         break;
                     case "Vivi":
+                        text = "";
+                        break;
+                    case "Lucius":
                         text = "";
                         break;
                 }
@@ -252,6 +258,9 @@ public class PolygamyPlugin : BaseUnityPlugin
                     return "Oh! Heh, I really shouldn't be surprised. Actually, what's really surprising is... I don't think it's a bad idea. Sure, let's do it, XX![]We should do it at 4pm tomorrow at the event center! I'll take care of everything else, you just show up!";
                 case "Vivi":
                     Player.Instance.QuestList.StartQuest("ViviMarriageQuest");
+                    return "Oh! Heh, I really shouldn't be surprised. Actually, what's really surprising is... I don't think it's a bad idea. Sure, let's do it, XX![]We should do it at 4pm tomorrow at the event center! I'll take care of everything else, you just show up!";
+                case "Lucius":
+                    Player.Instance.QuestList.StartQuest("LuciusMarriageQuest");
                     return "Oh! Heh, I really shouldn't be surprised. Actually, what's really surprising is... I don't think it's a bad idea. Sure, let's do it, XX![]We should do it at 4pm tomorrow at the event center! I'll take care of everything else, you just show up!";
                 default:
                     return "Oh! Heh, I really shouldn't be surprised. Actually, what's really surprising is... I don't think it's a bad idea. Sure, let's do it, XX![]We should do it at 4pm tomorrow at the event center! I'll take care of everything else, you just show up!";
