@@ -21,6 +21,7 @@ using System.Linq;
 using UnityEngine;
 using System.Collections;
 using System.IO;
+using System.Runtime.Remoting.Messaging;
 
 
 namespace Polygamy;
@@ -34,6 +35,17 @@ public class PolygamyPlugin : BaseUnityPlugin
     private Harmony m_harmony = new Harmony(pluginGuid);
     public static ManualLogSource logger;
 
+    public static void write_exception_to_console(Exception ex)
+    {
+        write_to_console("EXCEPTION ToString()", ex.ToString());
+        write_to_console("EXCEPTION Message", ex.Message);
+    }
+
+    public static void write_to_console(string title, string message)
+    {
+        PolygamyPlugin.logger.LogInfo((object)$"[{pluginName} UpdatedByWerri {title}]: {message}");
+    }
+
     private void Awake()
     {
         // Plugin startup logic
@@ -42,173 +54,375 @@ public class PolygamyPlugin : BaseUnityPlugin
         this.m_harmony.PatchAll();
     }
 
+    [HarmonyPatch(typeof(NPCAI), "HandleLoveLetter")]
+    class HarmonyPatch_NPCAI_HandleLoveLetter
+
+    {
+        private static ConfigFile polyGamyModMarryEveryoneAgainConfigLL = new ConfigFile(Path.Combine(Paths.ConfigPath, "vurawnica.updatedby.werri.sunhaven.polygamy.cfg"), true);
+        private static ConfigEntry<bool> polyGamyModMarryEveryoneAgainLL = polyGamyModMarryEveryoneAgainConfigLL.Bind("General.Toggles", "polyGamyModMarryEveryoneAgain", true, "Whether or not to marriage everyone again?");
+
+        private static bool NPCAI_CycleUnlocked(NPCAI npc)
+        {
+            string progressID;
+            switch (npc.OriginalName)
+            {
+                case "Catherine":
+                    progressID = "Catherine Cycle 9";
+                    break;
+                case "Claude":
+                    progressID = "Claude Cycle 11";
+                    break;
+                case "Darius":
+                    progressID = "Darius Cycle 11";
+                    break;
+                case "Donovan":
+                    progressID = "Donovan Cycle 8";
+                    break;
+                case "Iris":
+                    progressID = "Iris Cycle 11";
+                    break;
+                case "Jun":
+                    progressID = "Jun Cycle 7";
+                    break;
+                case "Kai":
+                    progressID = "Kai Cycle 5";
+                    break;
+                case "Karish":
+                    progressID = "Karish Cycle 5";
+                    break;
+                case "Kitty":
+                    progressID = "Kitty Cycle 8";
+                    break;
+                case "Liam":
+                    progressID = "Liam Cycle 10";
+                    break;
+                case "Lucia":
+                    progressID = "Lucia Cycle 9";
+                    break;
+                case "Lucius":
+                    progressID = "Lucius Cycle 5";
+                    break;
+                case "Lynn":
+                    progressID = "Lynn Cycle 9";
+                    break;
+                case "Miyeon":
+                    progressID = "Miyeon Cycle 5";
+                    break;
+                case "Nathaniel":
+                    progressID = "Nathaniel Cycle 9";
+                    break;
+                case "Shang":
+                    progressID = "Shang Cycle 5";
+                    break;
+                case "Vaan":
+                    progressID = "Vaan Cycle 8";
+                    break;
+                case "Vivi":
+                    progressID = "Vivi Cycle 5";
+                    break;
+                case "Wesley":
+                    progressID = "Wesley Cycle 5";
+                    break;
+                case "Wornhardt":
+                    progressID = "Wornhardt Cycle 10";
+                    break;
+                case "Xyla":
+                    progressID = "Xyla Cycle 11";
+                    break;
+                case "Zaria":
+                    progressID = "Zaria Cycle 5";
+                    break;
+                default:
+                    progressID = "Anne Cycle 10";
+                    break;
+            }
+            return SingletonBehaviour<GameSave>.Instance.GetProgressBoolCharacter(progressID);
+        }
+        private static bool Prefix(string __result, out bool response, NPCAI __instance, ref string ____npcName)
+        {
+            response = false;
+            bool flag = false;
+            string str = "";
+            if (__instance != null && ____npcName == __instance.OriginalName)
+            {
+                PolygamyPlugin.logger.LogInfo("[PolyGamy Mod v0.0.4 UpdatedByWerri]: You can use __instance.OriginalName!");
+            }
+            if (__instance.OriginalName.Equals("Wesley") && !SingletonBehaviour<GameSave>.Instance.GetProgressBoolCharacter("UnlockedWesley"))
+            {
+                string loveLetterReject;
+                __result = loveLetterReject = ScriptLocalization.RNPC_Welsey_LoveLetter_Reject;
+            }
+            if (__instance.IsMarriedToPlayer() || __instance.IsDatingPlayer())
+            {
+                flag = true;
+                str = ScriptLocalization.RNPC_Generic_LoveLetter_Reject_01;
+            }
+            else
+            {
+                float num;
+                if (!SingletonBehaviour<GameSave>.Instance.CurrentSave.characterData.Relationships.TryGetValue(__instance.OriginalName, out num) || (double)num < 25.0 || !NPCAI_CycleUnlocked(__instance))
+                {
+                    flag = true;
+                    str = ScriptLocalization.RNPC_Generic_LoveLetter_Reject_00;
+                }
+            }
+            if (flag)
+            {
+                Player.Instance.Inventory.AddItem(502);
+                __result = str + "[]" + ScriptLocalization.RNPC_Generic_LoveLetter_Reject_02;
+            }
+            response = true;
+            __instance.DatePlayer();
+            __result = ScriptLocalization.RNPC_Generic_LoveLetter_Accept;
+
+            return response;
+        }
+    }
+
     [HarmonyPatch(typeof(NPCAI), "HandleWeddingRing")]
     class HarmonyPatch_NPCAI_HandleWeddingRing
     {
         private static ConfigFile polyGamyModMarryEveryoneAgainConfig = new ConfigFile(Path.Combine(Paths.ConfigPath, "vurawnica.updatedby.werri.sunhaven.polygamy.cfg"), true);
 		private static ConfigEntry<bool> polyGamyModMarryEveryoneAgain = polyGamyModMarryEveryoneAgainConfig.Bind("General.Toggles", "polyGamyModMarryEveryoneAgain", true, "Whether or not to marriage everyone again?");
-        private static bool Prefix(ref string __result, out bool response, NPCAI __instance, ref string ____npcName)
+        private static bool Prefix(string __result, out bool response, NPCAI __instance, ref string ____npcName)
         {
             response = false;
             bool flag = false;
             string str = "";
             float value;
+            if (__instance != null && ____npcName == __instance.OriginalName)
+            {
+                PolygamyPlugin.logger.LogInfo("[PolyGamy Mod v0.0.4 UpdatedByWerri]: You can use __instance.OriginalName!");
+            }
             if (__instance.IsMarriedToPlayer())
             {
                 flag = true;
-                switch (____npcName)
+                switch (__instance.OriginalName)
                 {
-                    case "Wornhardt":
-                        str = "";
-                        break;
-                    case "Zaria":
-                        str = ScriptLocalization.RNPC_Zaria_DeclineProposal_01;
-                        break;
-                    case "Donovan":
-                        str = "";
-                        break;
-                    case "Karish":
-                        str = ScriptLocalization.RNPC_Karish_DeclineProposal_01;
-                        break;
-                    case "Claude":
-                        str = "";
-                        break;
-                    case "Jun":
-                        str = "";
-                        break;
-                    case "Vivi":
-                        str = ScriptLocalization.RNPC_Vivi_DeclineProposal_01;
-                        break;
-                    case "Lynn":
-                        str = ScriptLocalization.RNPC_Lynn_DeclineProposal_01;
-                        break;
-                    case "Liam":
-                        str = "";
-                        break;
                     case "Anne":
                         str = ScriptLocalization.RNPC_Anne_DeclineProposal_01;
-                        break;
-                    case "Miyeon":
-                        str = ScriptLocalization.RNPC_Miyeon_DeclineProposal_01;
-                        break;
-                    case "Kitty":
-                        str = "";
-                        break;
-                    case "Lucius":
-                        str = ScriptLocalization.RNPC_Lucius_DeclineProposal_01;
-                        break;
-                    case "Shang":
-                        str = ScriptLocalization.RNPC_Shang_DeclineProposal_01;
-                        break;
-                    case "Wesley":
-                        str = ScriptLocalization.RNPC_Wesley_DeclineProposal_01;
-                        break;
-                    case "Darius":
-                        str = "";
-                        break;
-                    case "Xyla":
-                        str = "";
                         break;
                     case "Catherine":
                         str = "";
                         break;
-                    case "Lucia":
+                    case "Claude":
+                        str = "";
+                        break;
+                    case "Darius":
+                        str = "";
+                        break;
+                    case "Donovan":
                         str = "";
                         break;
                     case "Iris":
+                        str = "";
+                        break;
+                    case "Jun":
                         str = "";
                         break;
                     case "Kai":
                         str = ScriptLocalization.RNPC_Kai_DeclineProposal_01;
                         break;
-                    case "Vaan":
-                        str = "";
-                        break;
-                    case "Nathaniel":
-                        str = "";
-                        break;
-                }
-            }
-            else if (
-                !__instance.IsDatingPlayer() ||
-                !SingletonBehaviour<GameSave>.Instance.GetProgressBoolCharacter(____npcName + " Cycle 14") ||
-                !SingletonBehaviour<GameSave>.Instance.CurrentSave.characterData.Relationships.TryGetValue(____npcName, out value) ||
-                value < 75f)
-            {
-                flag = true;
-                switch (____npcName)
-                {
-                    case "Wornhardt":
-                        str = "";
-                        break;
-                    case "Zaria":
-                        str = ScriptLocalization.RNPC_Zaria_DeclineProposal_00;
-                        break;
-                    case "Donovan":
-                        str = "";
-                        break;
                     case "Karish":
-                        str = ScriptLocalization.RNPC_Karish_DeclineProposal_00;
-                        break;
-                    case "Claude":
-                        str = "";
-                        break;
-                    case "Jun":
-                        str = "";
-                        break;
-                    case "Vivi":
-                        str = ScriptLocalization.RNPC_Vivi_DeclineProposal_00;
-                        break;
-                    case "Lynn":
-                        str = ScriptLocalization.RNPC_Lynn_DeclineProposal_00;
-                        break;
-                    case "Liam":
-                        str = "";
-                        break;
-                    case "Anne":
-                        str = ScriptLocalization.RNPC_Anne_DeclineProposal_00;
-                        break;
-                    case "Miyeon":
-                        str = ScriptLocalization.RNPC_Miyeon_DeclineProposal_00;
+                        str = ScriptLocalization.RNPC_Karish_DeclineProposal_01;
                         break;
                     case "Kitty":
                         str = "";
                         break;
-                    case "Lucius":
-                        str = ScriptLocalization.RNPC_Lucius_DeclineProposal_00;
-                        break;
-                    case "Shang":
-                        str = ScriptLocalization.RNPC_Shang_DeclineProposal_00;
-                        break;
-                    case "Wesley":
-                        str = ScriptLocalization.RNPC_Wesley_DeclineProposal_00;
-                        break;
-                    case "Darius":
-                        str = "";
-                        break;
-                    case "Xyla":
-                        str = "";
-                        break;
-                    case "Catherine":
+                    case "Liam":
                         str = "";
                         break;
                     case "Lucia":
                         str = "";
                         break;
-                    case "Iris":
-                        str = "";
+                    case "Lucius":
+                        str = ScriptLocalization.RNPC_Lucius_DeclineProposal_01;
                         break;
-                    case "Kai":
-                        str = ScriptLocalization.RNPC_Kai_DeclineProposal_00;
+                    case "Lynn":
+                        str = ScriptLocalization.RNPC_Lynn_DeclineProposal_01;
                         break;
-                    case "Vaan":
-                        str = "";
+                    case "Miyeon":
+                        str = ScriptLocalization.RNPC_Miyeon_DeclineProposal_01;
                         break;
                     case "Nathaniel":
                         str = "";
                         break;
+                    case "Shang":
+                        str = ScriptLocalization.RNPC_Shang_DeclineProposal_01;
+                        break;
+                    case "Vaan":
+                        str = "";
+                        break;
+                    case "Vivi":
+                        str = ScriptLocalization.RNPC_Vivi_DeclineProposal_01;
+                        break;
+                    case "Wesley":
+                        str = ScriptLocalization.RNPC_Wesley_DeclineProposal_01;
+                        break;
+                    case "Wornhardt":
+                        str = "";
+                        break;
+                    case "Xyla":
+                        str = "";
+                        break;
+                    case "Zaria":
+                        str = ScriptLocalization.RNPC_Zaria_DeclineProposal_01;
+                        break;
                 }
             }
+            else if (SingletonBehaviour<GameSave>.Instance.GetProgressBoolCharacter("Married"))
+            {
+                flag = true;
+                switch (__instance.OriginalName)
+                {
+                    case "Anne":
+                        str = ScriptLocalization.RNPC_Anne_DeclineProposal_02;
+                        break;
+                    case "Catherine":
+                        str = "";
+                        break;
+                    case "Claude":
+                        str = "";
+                        break;
+                    case "Darius":
+                        str = "";
+                        break;
+                    case "Donovan":
+                        str = "";
+                        break;
+                    case "Iris":
+                        str = "";
+                        break;
+                    case "Jun":
+                        str = "";
+                        break;
+                    case "Kai":
+                        str = ScriptLocalization.RNPC_Kai_DeclineProposal_02;
+                        break;
+                    case "Karish":
+                        str = ScriptLocalization.RNPC_Karish_DeclineProposal_02;
+                        break;
+                    case "Kitty":
+                        str = "";
+                        break;
+                    case "Liam":
+                        str = "";
+                        break;
+                    case "Lucia":
+                        str = "";
+                        break;
+                    case "Lucius":
+                        str = ScriptLocalization.RNPC_Lucius_DeclineProposal_02;
+                        break;
+                    case "Lynn":
+                        str = ScriptLocalization.RNPC_Lynn_DeclineProposal_02;
+                        break;
+                    case "Miyeon":
+                        str = ScriptLocalization.RNPC_Miyeon_DeclineProposal_02;
+                        break;
+                    case "Nathaniel":
+                        str = "";
+                        break;
+                    case "Shang":
+                        str = ScriptLocalization.RNPC_Shang_DeclineProposal_02;
+                        break;
+                    case "Vaan":
+                        str = "";
+                        break;
+                    case "Vivi":
+                        str = ScriptLocalization.RNPC_Vivi_DeclineProposal_02;
+                        break;
+                    case "Wesley":
+                        str = ScriptLocalization.RNPC_Wesley_DeclineProposal_02;
+                        break;
+                    case "Wornhardt":
+                        str = "";
+                        break;
+                    case "Xyla":
+                        str = "";
+                        break;
+                    case "Zaria":
+                        str = ScriptLocalization.RNPC_Zaria_DeclineProposal_02;
+                        break;
+                }
+            }
+            else if (!__instance.IsDatingPlayer() || !SingletonBehaviour<GameSave>.Instance.GetProgressBoolCharacter(____npcName + " Cycle 14") || !SingletonBehaviour<GameSave>.Instance.CurrentSave.characterData.Relationships.TryGetValue(____npcName, out value) || (double)value < 75.0)
+            {
+                    flag = true;
+                    switch (__instance.OriginalName)
+                    {
+                        case "Anne":
+                            str = ScriptLocalization.RNPC_Anne_DeclineProposal_00;
+                            break;
+                        case "Catherine":
+                            str = "";
+                            break;
+                        case "Claude":
+                            str = "";
+                            break;
+                        case "Darius":
+                            str = "";
+                            break;
+                        case "Donovan":
+                            str = "";
+                            break;
+                        case "Iris":
+                            str = "";
+                            break;
+                        case "Jun":
+                            str = "";
+                            break;
+                        case "Kai":
+                            str = ScriptLocalization.RNPC_Kai_DeclineProposal_00;
+                            break;
+                        case "Karish":
+                            str = ScriptLocalization.RNPC_Karish_DeclineProposal_00;
+                            break;
+                        case "Kitty":
+                            str = "";
+                            break;
+                        case "Liam":
+                            str = "";
+                            break;
+                        case "Lucia":
+                            str = "";
+                            break;
+                        case "Lucius":
+                            str = ScriptLocalization.RNPC_Lucius_DeclineProposal_00;
+                            break;
+                        case "Lynn":
+                            str = ScriptLocalization.RNPC_Lynn_DeclineProposal_00;
+                            break;
+                        case "Miyeon":
+                            str = ScriptLocalization.RNPC_Miyeon_DeclineProposal_00;
+                            break;
+                        case "Nathaniel":
+                            str = "";
+                            break;
+                        case "Shang":
+                            str = ScriptLocalization.RNPC_Shang_DeclineProposal_00;
+                            break;
+                        case "Vaan":
+                            str = "";
+                            break;
+                        case "Vivi":
+                            str = ScriptLocalization.RNPC_Vivi_DeclineProposal_00;
+                            break;
+                        case "Wesley":
+                            str = ScriptLocalization.RNPC_Wesley_DeclineProposal_00;
+                            break;
+                        case "Wornhardt":
+                            str = "";
+                            break;
+                        case "Xyla":
+                            str = "";
+                            break;
+                        case "Zaria":
+                            str = ScriptLocalization.RNPC_Zaria_DeclineProposal_00;
+                            break;
+                    }
+            }
+            // PolyGamy Mod Code Start
             foreach (string quest in Player.Instance.QuestList.questLog.Keys.ToList<string>())
             {
                 if (quest.Contains("MarriageQuest"))
@@ -216,119 +430,131 @@ public class PolygamyPlugin : BaseUnityPlugin
                     Player.Instance.QuestList.AbandonQuest(quest);
                 }
             }
+            // PolyGamy Mod Code End
             if (flag)
             {
+                Player.Instance.Inventory.AddItem(6107);
                 __result = str + "[]" + ScriptLocalization.RNPC_Generic_DeclineProposal;
+                PolygamyPlugin.logger.LogInfo("[PolyGamy Mod v0.0.4 UpdatedByWerri]: Normally return is here, but now we want to override this!");
             }
-            if (SingletonBehaviour<GameSave>.Instance.GetProgressBoolCharacter("Married"))
-            {
-                Player.Instance.Inventory.RemoveItem(6107, 1);
-            }
+            // PolyGamy Mod Code Start
+            //if (SingletonBehaviour<GameSave>.Instance.GetProgressBoolCharacter("Married"))
+            //{
+            //    Player.Instance.Inventory.RemoveItem(6107, 1);
+            //}
+            // PolyGamy Mod Code End
             response = true;
-            SingletonBehaviour<GameSave>.Instance.SetProgressBoolCharacter("EngagedToRNPC", value: true);
-            switch (____npcName)
+            SingletonBehaviour<GameSave>.Instance.SetProgressBoolCharacter("EngagedToRNPC", true);
+            switch (__instance.OriginalName)
             {
-                case "Wornhardt":
-                    Player.Instance.QuestList.StartQuest("WornhardtMarriageQuest", false);
-                    __result = ScriptLocalization.RNPC_Wornhardt_AcceptProposal;
-                    return false;
-                case "Zaria":
-                    Player.Instance.QuestList.StartQuest("ZariaMarriageQuest", false);
-                    __result = ScriptLocalization.RNPC_Zaria_AcceptProposal;
-                    return false;
-                case "Donovan":
-                    Player.Instance.QuestList.StartQuest("DonovanMarriageQuest", false);
-                    __result = ScriptLocalization.RNPC_Donovan_AcceptProposal;
-                    return false;
-                case "Karish":
-                    Player.Instance.QuestList.StartQuest("KarishMarriageQuest", false);
-                    __result = ScriptLocalization.RNPC_Karish_AcceptProposal;
-                    return false;
-                case "Claude":
-                    Player.Instance.QuestList.StartQuest("ClaudeMarriageQuest", false);
-                    __result = ScriptLocalization.RNPC_Claude_AcceptProposal;
-                    return false;
-                case "Jun":
-                    Player.Instance.QuestList.StartQuest("JunMarriageQuest", false);
-                    __result = ScriptLocalization.RNPC_Jun_AcceptProposal;
-                    return false;
-                case "Vivi":
-                    Player.Instance.QuestList.StartQuest("ViviMarriageQuest", false);
-                    __result = ScriptLocalization.RNPC_Vivi_AcceptProposal;
-                    return false;
-                case "Lynn":
-                    Player.Instance.QuestList.StartQuest("LynnMarriageQuest", false);
-                    __result = ScriptLocalization.RNPC_Lynn_AcceptProposal;
-                    return false;
-                case "Liam":
-                    Player.Instance.QuestList.StartQuest("LiamMarriageQuest", false);
-                    __result = ScriptLocalization.RNPC_Liam_AcceptProposal;
-                    return false;
                 case "Anne":
-                    Player.Instance.QuestList.StartQuest("AnneMarriageQuest", false);
+                    Player.Instance.QuestList.StartQuest("AnneMarriageQuest");
                     __result = ScriptLocalization.RNPC_Anne_AcceptProposal;
-                    return false;
-                case "Miyeon":
-                    Player.Instance.QuestList.StartQuest("MiyeonMarriageQuest", false);
-                    __result = ScriptLocalization.RNPC_Miyeon_AcceptProposal;
-                    return false;
-                case "Kitty":
-                    Player.Instance.QuestList.StartQuest("KittyMarriageQuest", false);
-                    __result = ScriptLocalization.RNPC_Kitty_AcceptProposal;
-                    return false;
-                case "Lucius":
-                    Player.Instance.QuestList.StartQuest("LuciusMarriageQuest", false);
-                    __result = ScriptLocalization.RNPC_Lucius_AcceptProposal;
-                    return false;
-                case "Shang":
-                    Player.Instance.QuestList.StartQuest("ShangMarriageQuest", false);
-                    __result = ScriptLocalization.RNPC_Shang_AcceptProposal;
-                    return false;
-                case "Wesley":
-                    Player.Instance.QuestList.StartQuest("WesleyMarriageQuest", false);
-                    __result = ScriptLocalization.RNPC_Wesley_AcceptProposal;
-                    return false;
-                case "Darius":
-                    Player.Instance.QuestList.StartQuest("DariusMarriageQuest", false);
-                    __result = ScriptLocalization.RNPC_Darius_AcceptProposal;
-                    return false;
-                case "Xyla":
-                    Player.Instance.QuestList.StartQuest("XylaMarriageQuest", false);
-                    __result = ScriptLocalization.RNPC_Xyla_AcceptProposal;
-                    return false;
+                    break;
                 case "Catherine":
-                    Player.Instance.QuestList.StartQuest("CatherineMarriageQuest", false);
+                    Player.Instance.QuestList.StartQuest("CatherineMarriageQuest");
                     __result = ScriptLocalization.RNPC_Catherine_AcceptProposal;
-                    return false;
-                case "Lucia":
-                    Player.Instance.QuestList.StartQuest("LuciaMarriageQuest", false);
-                    __result = ScriptLocalization.RNPC_Lucia_AcceptProposal;
-                    return false;
+                    break;
+                case "Claude":
+                    Player.Instance.QuestList.StartQuest("ClaudeMarriageQuest");
+                    __result = ScriptLocalization.RNPC_Claude_AcceptProposal;
+                    break;
+                case "Darius":
+                    Player.Instance.QuestList.StartQuest("DariusMarriageQuest");
+                    __result = ScriptLocalization.RNPC_Darius_AcceptProposal;
+                    break;
+                case "Donovan":
+                    Player.Instance.QuestList.StartQuest("DonovanMarriageQuest");
+                    __result = ScriptLocalization.RNPC_Donovan_AcceptProposal;
+                    break;
                 case "Iris":
-                    Player.Instance.QuestList.StartQuest("IrisMarriageQuest", false);
+                    Player.Instance.QuestList.StartQuest("IrisMarriageQuest");
                     __result = ScriptLocalization.RNPC_Iris_AcceptProposal;
-                    return false;
+                    break;
+                case "Jun":
+                    Player.Instance.QuestList.StartQuest("JunMarriageQuest");
+                    __result = ScriptLocalization.RNPC_Jun_AcceptProposal;
+                    break;
                 case "Kai":
-                    Player.Instance.QuestList.StartQuest("KaiMarriageQuest", false);
+                    Player.Instance.QuestList.StartQuest("KaiMarriageQuest");
                     __result = ScriptLocalization.RNPC_Kai_AcceptProposal;
-                    return false;
-                case "Vaan":
-                    Player.Instance.QuestList.StartQuest("VaanMarriageQuest", false);
-                    __result = ScriptLocalization.RNPC_Vaan_AcceptProposal;
-                    return false;
+                    break;
+                case "Karish":
+                    Player.Instance.QuestList.StartQuest("KarishMarriageQuest");
+                    __result = ScriptLocalization.RNPC_Karish_AcceptProposal;
+                    break;
+                case "Kitty":
+                    Player.Instance.QuestList.StartQuest("KittyMarriageQuest");
+                    __result = ScriptLocalization.RNPC_Kitty_AcceptProposal;
+                    break;
+                case "Liam":
+                    Player.Instance.QuestList.StartQuest("LiamMarriageQuest");
+                    __result = ScriptLocalization.RNPC_Liam_AcceptProposal;
+                    break;
+                case "Lucia":
+                    Player.Instance.QuestList.StartQuest("LuciaMarriageQuest");
+                    __result = ScriptLocalization.RNPC_Lucia_AcceptProposal;
+                    break;
+                case "Lucius":
+                    Player.Instance.QuestList.StartQuest("LuciusMarriageQuest");
+                    __result = ScriptLocalization.RNPC_Lucius_AcceptProposal;
+                    break;
+                case "Lynn":
+                    Player.Instance.QuestList.StartQuest("LynnMarriageQuest");
+                    __result = ScriptLocalization.RNPC_Lynn_AcceptProposal;
+                    break;
+                case "Miyeon":
+                    Player.Instance.QuestList.StartQuest("MiyeonMarriageQuest");
+                    __result = ScriptLocalization.RNPC_Miyeon_AcceptProposal;
+                    break;
                 case "Nathaniel":
-                    Player.Instance.QuestList.StartQuest("NathanielMarriageQuest", false);
+                    Player.Instance.QuestList.StartQuest("NathanielMarriageQuest");
                     __result = ScriptLocalization.RNPC_Nathaniel_AcceptProposal;
-                    return false;
+                    break;
+                case "Shang":
+                    Player.Instance.QuestList.StartQuest("ShangMarriageQuest");
+                    __result = ScriptLocalization.RNPC_Shang_AcceptProposal;
+                    break;
+                case "Vaan":
+                    Player.Instance.QuestList.StartQuest("VaanMarriageQuest");
+                    __result = ScriptLocalization.RNPC_Vaan_AcceptProposal;
+                    break;
+                case "Vivi":
+                    Player.Instance.QuestList.StartQuest("ViviMarriageQuest");
+                    __result = ScriptLocalization.RNPC_Vivi_AcceptProposal;
+                    break;
+                case "Wesley":
+                    Player.Instance.QuestList.StartQuest("WesleyMarriageQuest");
+                    __result = ScriptLocalization.RNPC_Wesley_AcceptProposal;
+                    break;
+                case "Wornhardt":
+                    Player.Instance.QuestList.StartQuest("WornhardtMarriageQuest");
+                    __result = ScriptLocalization.RNPC_Wornhardt_AcceptProposal;
+                    break;
+                case "Xyla":
+                    Player.Instance.QuestList.StartQuest("XylaMarriageQuest");
+                    __result = ScriptLocalization.RNPC_Xyla_AcceptProposal;
+                    break;
+                case "Zaria":
+                    Player.Instance.QuestList.StartQuest("ZariaMarriageQuest");
+                    __result = ScriptLocalization.RNPC_Zaria_AcceptProposal;
+                    break;
                 default:
                     __result = ScriptLocalization.RNPC_Generic_AcceptProposal;
-                    return false;
-
+                    break;
             }
+            PolygamyPlugin.logger.LogInfo("[PolyGamy Mod v0.0.4 UpdatedByWerri]: Override Return, Don't decline marriage!!");
+            // PolyGamy Mod Code Start
+            return false;
+            // PolyGamy Mod Code End
         }
-		
-		private static string Postfix(string __result, out bool response, NPCAI __instance, ref string ____npcName)
+
+        private static string Postfix(string __result, out bool response, NPCAI __instance, ref string ____npcName)
 	    {
+            if (__instance != null && ____npcName == __instance.OriginalName)
+            {
+                PolygamyPlugin.logger.LogInfo("[PolyGamy Mod v0.0.4 UpdatedByWerri]: You can use __instance.OriginalName!");
+            }
             response = false;
 			string resultParam = __result;
 			bool responseParam = response;
@@ -356,10 +582,10 @@ public class PolygamyPlugin : BaseUnityPlugin
             bool flag = false;
             string text = "";
             float value;
-            if (SingletonBehaviour<GameSave>.Instance.GetProgressBoolCharacter("MarriedTo" + ____npcName))
+            if (SingletonBehaviour<GameSave>.Instance.GetProgressBoolCharacter("MarriedTo" + __instance.OriginalName))
             {
                 flag = true;
-                switch (____npcName)
+                switch (__instance.OriginalName)
                 {
                     case "Lynn":
                         text = "Hehe, you want to get married again?? That's cute sweetie, but I don't think it works that way.";
@@ -428,14 +654,14 @@ public class PolygamyPlugin : BaseUnityPlugin
             }
             else if
                 (
-                !SingletonBehaviour<GameSave>.Instance.GetProgressBoolCharacter("Dating" + ____npcName) ||
-                !SingletonBehaviour<GameSave>.Instance.GetProgressBoolCharacter(____npcName + " Cycle 14") ||
-                !SingletonBehaviour<GameSave>.Instance.CurrentSave.characterData.Relationships.TryGetValue(____npcName, out value) ||
+                !SingletonBehaviour<GameSave>.Instance.GetProgressBoolCharacter("Dating" + __instance.OriginalName) ||
+                !SingletonBehaviour<GameSave>.Instance.GetProgressBoolCharacter(__instance.OriginalName + " Cycle 14") ||
+                !SingletonBehaviour<GameSave>.Instance.CurrentSave.characterData.Relationships.TryGetValue(__instance.OriginalName, out value) ||
                 value < 75f
                 )
             {
                 flag = true;
-                switch (____npcName)
+                switch (__instance.OriginalName)
                 {
                     case "Lynn":
                         text = "Oh - wow! I'm so sorry XX, but I don't think I'm quite ready for that. We should get to know each other better first, right?";
@@ -592,10 +818,10 @@ public class PolygamyPlugin : BaseUnityPlugin
       response = false;
       bool flag = false;
       string str = "";
-      if (SingletonBehaviour<GameSave>.Instance.GetProgressBoolCharacter("MarriedTo" + ____npcName))
+      if (SingletonBehaviour<GameSave>.Instance.GetProgressBoolCharacter("MarriedTo" + __instance.OriginalName))
       {
         flag = true;
-        switch (____npcName)
+        switch (__instance.OriginalName)
         {
           case "Anne":
             SingletonBehaviour<GameSave>.Instance.SetProgressBoolCharacter("EngagedToRNPC", true);
@@ -765,7 +991,7 @@ public class PolygamyPlugin : BaseUnityPlugin
       else
       {
         float num;
-        if (!SingletonBehaviour<GameSave>.Instance.GetProgressBoolCharacter("Dating" + ____npcName) || !SingletonBehaviour<GameSave>.Instance.GetProgressBoolCharacter(____npcName + " Cycle 14") || !SingletonBehaviour<GameSave>.Instance.CurrentSave.characterData.Relationships.TryGetValue(____npcName, out num) || (double) num < 75.0)
+        if (!SingletonBehaviour<GameSave>.Instance.GetProgressBoolCharacter("Dating" + __instance.OriginalName) || !SingletonBehaviour<GameSave>.Instance.GetProgressBoolCharacter(__instance.OriginalName + " Cycle 14") || !SingletonBehaviour<GameSave>.Instance.CurrentSave.characterData.Relationships.TryGetValue(__instance.OriginalName, out num) || (double) num < 75.0)
         {
           flag = true;
           switch (____npcName)
@@ -923,201 +1149,214 @@ public class PolygamyPlugin : BaseUnityPlugin
     {
         private static bool Prefix(ref string __result, out bool response, NPCAI __instance, ref string ____npcName)
         {
+            if (__instance != null && ____npcName == __instance.OriginalName)
+            {
+                PolygamyPlugin.logger.LogInfo("[PolyGamy Mod v0.0.4 UpdatedByWerri]: You can use __instance.OriginalName!");
+            }
+
             response = true;
 
-            List<string> spouses = new List<string>();
-            int count = 0;
-            foreach (var npcai in SingletonBehaviour<NPCManager>.Instance._npcs.Values.Where(npcai => SingletonBehaviour<GameSave>.Instance.GetProgressBoolCharacter("MarriedTo" + npcai.OriginalName)))
+            try
             {
-                spouses.Add(npcai.OriginalName);
-                count += 1;
-            }
-            if (count <= 1)
-            {
-                return true;
-            }
-
-            bool flag = __instance.IsMarriedToPlayer();
-            __instance.PlatonicPlayer();
-            string new_main;
-
-            if (GameSave.CurrentCharacter.Relationships.ContainsKey(____npcName))
-            {
-                GameSave.CurrentCharacter.Relationships[____npcName] = Mathf.Max(0f, GameSave.CurrentCharacter.Relationships[____npcName]);
-            }
-            string progressStringCharacter = SingletonBehaviour<GameSave>.Instance.GetProgressStringCharacter("MarriedWith");
-
-            if (progressStringCharacter.Equals(____npcName))
-            {
-                if (spouses[0] == ____npcName)
+                List<string> spouses = new List<string>();
+                int count = 0;
+                foreach (var npcai in SingletonBehaviour<NPCManager>.Instance._npcs.Values.Where(npcai => SingletonBehaviour<GameSave>.Instance.GetProgressBoolCharacter("MarriedTo" + npcai.OriginalName)))
                 {
-                    new_main = spouses[1];
+                    spouses.Add(npcai.OriginalName);
+                    count += 1;
                 }
-                else
+                if (count <= 1)
                 {
-                    new_main = spouses[0];
+                    return true;
                 }
-                SingletonBehaviour<GameSave>.Instance.SetProgressStringCharacter("MarriedWith", new_main);
-                SingletonBehaviour<GameSave>.Instance.SetProgressBoolCharacter("MarriedTo" + progressStringCharacter, false);
-                SingletonBehaviour<GameSave>.Instance.SetProgressBoolWorld(____npcName + "MarriedWalkPath", false, true);
-                NPCAI realNPC = SingletonBehaviour<NPCManager>.Instance.GetRealNPC(____npcName);
-                realNPC.GeneratePath();
-                SingletonBehaviour<NPCManager>.Instance.StartNPCPath(realNPC);
-            }
-            __instance.GenerateCycle(false);
 
-            if (flag)
-            {
+                bool flag = __instance.IsMarriedToPlayer();
+                __instance.PlatonicPlayer();
+                string new_main;
+
+                if (GameSave.CurrentCharacter.Relationships.ContainsKey(____npcName))
+                {
+                    GameSave.CurrentCharacter.Relationships[____npcName] = Mathf.Max(0f, GameSave.CurrentCharacter.Relationships[____npcName]);
+                }
+                string progressStringCharacter = SingletonBehaviour<GameSave>.Instance.GetProgressStringCharacter("MarriedWith");
+
+                if (progressStringCharacter.Equals(____npcName))
+                {
+                    if (spouses[0] == ____npcName)
+                    {
+                        new_main = spouses[1];
+                    }
+                    else
+                    {
+                        new_main = spouses[0];
+                    }
+                    SingletonBehaviour<GameSave>.Instance.SetProgressStringCharacter("MarriedWith", new_main);
+                    SingletonBehaviour<GameSave>.Instance.SetProgressBoolCharacter("MarriedTo" + progressStringCharacter, false);
+                    SingletonBehaviour<GameSave>.Instance.SetProgressBoolWorld(____npcName + "MarriedWalkPath", false, true);
+                    NPCAI realNPC = SingletonBehaviour<NPCManager>.Instance.GetRealNPC(____npcName);
+                    realNPC.GeneratePath();
+                    SingletonBehaviour<NPCManager>.Instance.StartNPCPath(realNPC);
+                }
+                __instance.GenerateCycle(false);
+
+                if (flag)
+                {
+                    switch (____npcName)
+                    {
+                        case "Wornhardt":
+                            __result = ScriptLocalization.RNPC_Wornhardt_MLP_Married;
+                            return false;
+                        case "Zaria":
+                            __result = ScriptLocalization.RNPC_Zaria_MLP_Married;
+                            return false;
+                        case "Donovan":
+                            __result = ScriptLocalization.RNPC_Donovan_MLP_Married;
+                            return false;
+                        case "Karish":
+                            __result = ScriptLocalization.RNPC_Karish_MLP_Married;
+                            return false;
+                        case "Claude":
+                            __result = ScriptLocalization.RNPC_Claude_MLP_Married;
+                            return false;
+                        case "Jun":
+                            __result = ScriptLocalization.RNPC_Jun_MLP_Married;
+                            return false;
+                        case "Vivi":
+                            __result = ScriptLocalization.RNPC_Vivi_MLP_Married;
+                            return false;
+                        case "Lynn":
+                            __result = ScriptLocalization.RNPC_Lynn_MLP_Married;
+                            return false;
+                        case "Liam":
+                            __result = ScriptLocalization.RNPC_Liam_MLP_Married;
+                            return false;
+                        case "Anne":
+                            __result = ScriptLocalization.RNPC_Anne_MLP_Married;
+                            return false;
+                        case "Miyeon":
+                            __result = ScriptLocalization.RNPC_Miyeon_MLP_Married;
+                            return false;
+                        case "Kitty":
+                            __result = ScriptLocalization.RNPC_Kitty_MLP_Married;
+                            return false;
+                        case "Lucius":
+                            __result = ScriptLocalization.RNPC_Lucius_MLP_Married;
+                            return false;
+                        case "Shang":
+                            __result = ScriptLocalization.RNPC_Shang_MLP_Married;
+                            return false;
+                        case "Wesley":
+                            __result = ScriptLocalization.RNPC_Wesley_MLP_Married;
+                            return false;
+                        case "Darius":
+                            __result = ScriptLocalization.RNPC_Darius_MLP_Married;
+                            return false;
+                        case "Xyla":
+                            __result = ScriptLocalization.RNPC_Xyla_MLP_Married;
+                            return false;
+                        case "Catherine":
+                            __result = ScriptLocalization.RNPC_Catherine_MLP_Married;
+                            return false;
+                        case "Lucia":
+                            __result = ScriptLocalization.RNPC_Lucia_MLP_Married;
+                            return false;
+                        case "Iris":
+                            __result = ScriptLocalization.RNPC_Iris_MLP_Married;
+                            return false;
+                        case "Kai":
+                            __result = ScriptLocalization.RNPC_Kai_MLP_Married;
+                            return false;
+                        case "Vaan":
+                            __result = ScriptLocalization.RNPC_Vaan_MLP_Married;
+                            return false;
+                        case "Nathaniel":
+                            __result = ScriptLocalization.RNPC_Nathaniel_MLP_Married;
+                            return false;
+                        default:
+                            __result = ScriptLocalization.RNPC_Anne_MLP_Married;
+                            return false;
+                    }
+                }
                 switch (____npcName)
                 {
                     case "Wornhardt":
-                        __result = ScriptLocalization.RNPC_Wornhardt_MLP_Married;
+                        __result = ScriptLocalization.RNPC_Wornhardt_MLP;
                         return false;
                     case "Zaria":
-                        __result = ScriptLocalization.RNPC_Zaria_MLP_Married;
+                        __result = ScriptLocalization.RNPC_Zaria_MLP;
                         return false;
                     case "Donovan":
-                        __result = ScriptLocalization.RNPC_Donovan_MLP_Married;
+                        __result = ScriptLocalization.RNPC_Donovan_MLP;
                         return false;
                     case "Karish":
-                        __result = ScriptLocalization.RNPC_Karish_MLP_Married;
+                        __result = ScriptLocalization.RNPC_Karish_MLP;
                         return false;
                     case "Claude":
-                        __result = ScriptLocalization.RNPC_Claude_MLP_Married;
+                        __result = ScriptLocalization.RNPC_Claude_MLP;
                         return false;
                     case "Jun":
-                        __result = ScriptLocalization.RNPC_Jun_MLP_Married;
+                        __result = ScriptLocalization.RNPC_Jun_MLP;
                         return false;
                     case "Vivi":
-                        __result = ScriptLocalization.RNPC_Vivi_MLP_Married;
+                        __result = ScriptLocalization.RNPC_Vivi_MLP;
                         return false;
                     case "Lynn":
-                        __result = ScriptLocalization.RNPC_Lynn_MLP_Married;
+                        __result = ScriptLocalization.RNPC_Lynn_MLP;
                         return false;
                     case "Liam":
-                        __result = ScriptLocalization.RNPC_Liam_MLP_Married;
+                        __result = ScriptLocalization.RNPC_Liam_MLP;
                         return false;
                     case "Anne":
-                        __result = ScriptLocalization.RNPC_Anne_MLP_Married;
+                        __result = ScriptLocalization.RNPC_Anne_MLP;
                         return false;
                     case "Miyeon":
-                        __result = ScriptLocalization.RNPC_Miyeon_MLP_Married;
+                        __result = ScriptLocalization.RNPC_Miyeon_MLP;
                         return false;
                     case "Kitty":
-                        __result = ScriptLocalization.RNPC_Kitty_MLP_Married;
+                        __result = ScriptLocalization.RNPC_Kitty_MLP;
                         return false;
                     case "Lucius":
-                        __result = ScriptLocalization.RNPC_Lucius_MLP_Married;
+                        __result = ScriptLocalization.RNPC_Lucius_MLP;
                         return false;
                     case "Shang":
-                        __result = ScriptLocalization.RNPC_Shang_MLP_Married;
+                        __result = ScriptLocalization.RNPC_Shang_MLP;
                         return false;
                     case "Wesley":
-                        __result = ScriptLocalization.RNPC_Wesley_MLP_Married;
+                        __result = ScriptLocalization.RNPC_Wesley_MLP;
                         return false;
                     case "Darius":
-                        __result = ScriptLocalization.RNPC_Darius_MLP_Married;
+                        __result = ScriptLocalization.RNPC_Darius_MLP;
                         return false;
                     case "Xyla":
-                        __result = ScriptLocalization.RNPC_Xyla_MLP_Married;
+                        __result = ScriptLocalization.RNPC_Xyla_MLP;
                         return false;
                     case "Catherine":
-                        __result = ScriptLocalization.RNPC_Catherine_MLP_Married;
+                        __result = ScriptLocalization.RNPC_Catherine_MLP;
                         return false;
                     case "Lucia":
-                        __result = ScriptLocalization.RNPC_Lucia_MLP_Married;
+                        __result = ScriptLocalization.RNPC_Lucia_MLP;
                         return false;
                     case "Iris":
-                        __result = ScriptLocalization.RNPC_Iris_MLP_Married;
+                        __result = ScriptLocalization.RNPC_Iris_MLP;
                         return false;
                     case "Kai":
-                        __result = ScriptLocalization.RNPC_Kai_MLP_Married;
+                        __result = ScriptLocalization.RNPC_Kai_MLP;
                         return false;
                     case "Vaan":
-                        __result = ScriptLocalization.RNPC_Vaan_MLP_Married;
+                        __result = ScriptLocalization.RNPC_Vaan_MLP;
                         return false;
                     case "Nathaniel":
-                        __result = ScriptLocalization.RNPC_Nathaniel_MLP_Married;
+                        __result = ScriptLocalization.RNPC_Nathaniel_MLP;
                         return false;
                     default:
-                        __result = ScriptLocalization.RNPC_Anne_MLP_Married;
+                        __result = ScriptLocalization.RNPC_Anne_MLP;
                         return false;
                 }
             }
-            switch (____npcName)
+            catch (Exception e)
             {
-                case "Wornhardt":
-                    __result = ScriptLocalization.RNPC_Wornhardt_MLP;
-                    return false;
-                case "Zaria":
-                    __result = ScriptLocalization.RNPC_Zaria_MLP;
-                    return false;
-                case "Donovan":
-                    __result = ScriptLocalization.RNPC_Donovan_MLP;
-                    return false;
-                case "Karish":
-                    __result = ScriptLocalization.RNPC_Karish_MLP;
-                    return false;
-                case "Claude":
-                    __result = ScriptLocalization.RNPC_Claude_MLP;
-                    return false;
-                case "Jun":
-                    __result = ScriptLocalization.RNPC_Jun_MLP;
-                    return false;
-                case "Vivi":
-                    __result = ScriptLocalization.RNPC_Vivi_MLP;
-                    return false;
-                case "Lynn":
-                    __result = ScriptLocalization.RNPC_Lynn_MLP;
-                    return false;
-                case "Liam":
-                    __result = ScriptLocalization.RNPC_Liam_MLP;
-                    return false;
-                case "Anne":
-                    __result = ScriptLocalization.RNPC_Anne_MLP;
-                    return false;
-                case "Miyeon":
-                    __result = ScriptLocalization.RNPC_Miyeon_MLP;
-                    return false;
-                case "Kitty":
-                    __result = ScriptLocalization.RNPC_Kitty_MLP;
-                    return false;
-                case "Lucius":
-                    __result = ScriptLocalization.RNPC_Lucius_MLP;
-                    return false;
-                case "Shang":
-                    __result = ScriptLocalization.RNPC_Shang_MLP;
-                    return false;
-                case "Wesley":
-                    __result = ScriptLocalization.RNPC_Wesley_MLP;
-                    return false;
-                case "Darius":
-                    __result = ScriptLocalization.RNPC_Darius_MLP;
-                    return false;
-                case "Xyla":
-                    __result = ScriptLocalization.RNPC_Xyla_MLP;
-                    return false;
-                case "Catherine":
-                    __result = ScriptLocalization.RNPC_Catherine_MLP;
-                    return false;
-                case "Lucia":
-                    __result = ScriptLocalization.RNPC_Lucia_MLP;
-                    return false;
-                case "Iris":
-                    __result = ScriptLocalization.RNPC_Iris_MLP;
-                    return false;
-                case "Kai":
-                    __result = ScriptLocalization.RNPC_Kai_MLP;
-                    return false;
-                case "Vaan":
-                    __result = ScriptLocalization.RNPC_Vaan_MLP;
-                    return false;
-                case "Nathaniel":
-                    __result = ScriptLocalization.RNPC_Nathaniel_MLP;
-                    return false;
-                default:
-                    __result = ScriptLocalization.RNPC_Anne_MLP;
-                    return false;
+                write_exception_to_console(e);
+                return false;
             }
         }
     }
@@ -1125,237 +1364,262 @@ public class PolygamyPlugin : BaseUnityPlugin
     [HarmonyPatch(typeof(NPCAI), "MarryPlayer")]
     class HarmonyPatch_Player_MarryPlayer
     {
-        private static bool Prefix(NPCAI __instance, ref string ____npcName)
+        public static void Prefix(NPCAI __instance, ref string ____npcName)
         {
-            List<string> spouses = new List<string>();
-            int count = 0;
-            string new_main;
-
-            foreach (var npcai in SingletonBehaviour<NPCManager>.Instance._npcs.Values.Where(npcai => SingletonBehaviour<GameSave>.Instance.GetProgressBoolCharacter("MarriedTo" + npcai.OriginalName)))
+            if (__instance != null && ____npcName == __instance.OriginalName)
             {
-                spouses.Add(npcai.OriginalName);
-                count += 1;
-            }
-            if (count <= 1)
-            {
-                return true;
+                PolygamyPlugin.logger.LogInfo("[PolyGamy Mod v0.0.4 UpdatedByWerri]: You can use __instance.OriginalName!");
             }
 
-            if (spouses[0] == ____npcName)
+            try
             {
-                new_main = spouses[1];
-            }
-            else
-            {
-                new_main = spouses[0];
-            }
-            string current_spouse = SingletonBehaviour<GameSave>.Instance.GetProgressStringCharacter("MarriedWith");
+                List<string> spouses = new List<string>();
+                int count = 0;
+                string new_main;
 
-            SingletonBehaviour<GameSave>.Instance.SetProgressBoolWorld(current_spouse + "MarriedWalkPath", false, true);
-            NPCAI realNPC = SingletonBehaviour<NPCManager>.Instance.GetRealNPC(current_spouse);
-            realNPC.GeneratePath();
-            SingletonBehaviour<NPCManager>.Instance.StartNPCPath(realNPC);
+                foreach (var npcai in SingletonBehaviour<NPCManager>.Instance._npcs.Values.Where(npcai => SingletonBehaviour<GameSave>.Instance.GetProgressBoolCharacter("MarriedTo" + npcai.OriginalName)))
+                {
+                    spouses.Add(npcai.OriginalName);
+                    count += 1;
+                }
+                if (count <= 1)
+                {
+                    return;
+                }
 
-            SingletonBehaviour<GameSave>.Instance.SetProgressBoolCharacter("MarriedTo" + ____npcName, true);
-            SingletonBehaviour<GameSave>.Instance.SetProgressBoolCharacter("Married", true);
-            SingletonBehaviour<GameSave>.Instance.SetProgressBoolCharacter("Dating" + ____npcName, false);
-            SingletonBehaviour<GameSave>.Instance.SetProgressStringCharacter("MarriedWith", ____npcName);
-            if (SingletonBehaviour<GameSave>.Instance.GetProgressBoolWorld("Tier3House"))
-            {
-                SingletonBehaviour<GameSave>.Instance.SetProgressBoolWorld(____npcName + "MarriedWalkPath", true, true);
-                realNPC = SingletonBehaviour<NPCManager>.Instance.GetRealNPC(____npcName);
+                if (spouses[0] == __instance.OriginalName)
+                {
+                    new_main = spouses[1];
+                }
+                else
+                {
+                    new_main = spouses[0];
+                }
+                string current_spouse = SingletonBehaviour<GameSave>.Instance.GetProgressStringCharacter("MarriedWith");
+
+                SingletonBehaviour<GameSave>.Instance.SetProgressBoolWorld(current_spouse + "MarriedWalkPath", false, true);
+                NPCAI realNPC = SingletonBehaviour<NPCManager>.Instance.GetRealNPC(current_spouse);
                 realNPC.GeneratePath();
                 SingletonBehaviour<NPCManager>.Instance.StartNPCPath(realNPC);
+
+                SingletonBehaviour<GameSave>.Instance.SetProgressBoolCharacter("MarriedTo" + __instance.OriginalName, true);
+                SingletonBehaviour<GameSave>.Instance.SetProgressBoolCharacter("Married", true);
+                SingletonBehaviour<GameSave>.Instance.SetProgressBoolCharacter("Dating" + __instance.OriginalName, false);
+                SingletonBehaviour<GameSave>.Instance.SetProgressStringCharacter("MarriedWith", __instance.OriginalName);
+                if (SingletonBehaviour<GameSave>.Instance.GetProgressBoolWorld("Tier3House"))
+                {
+                    SingletonBehaviour<GameSave>.Instance.SetProgressBoolWorld(__instance.OriginalName + "MarriedWalkPath", true, true);
+                    realNPC = SingletonBehaviour<NPCManager>.Instance.GetRealNPC(__instance.OriginalName);
+                    realNPC.GeneratePath();
+                    SingletonBehaviour<NPCManager>.Instance.StartNPCPath(realNPC);
+                }
+                Utilities.UnlockAcheivement(100);
+                __instance.GenerateCycle(false);
+                return;
             }
-            Utilities.UnlockAcheivement(100);
-            __instance.GenerateCycle(false);
-            return false;
+            catch (Exception e)
+            {
+                write_exception_to_console(e);
+                return;
+            }
         }
     }
 
     [HarmonyPatch(typeof(Player), "RequestSleep")]
     class HarmonyPatch_Player_RequestSleep
     {
-        private static bool Prefix(bool isMarriageBed = false, MarriageOvernightCutscene marriageOvernightCutscene = null, bool isCutsceneComplete = false)
+        public static bool Prefix(Bed bed, bool isMarriageBed = false, MarriageOvernightCutscene marriageOvernightCutscene = null, bool isCutsceneComplete = false)
         {
-            if (isMarriageBed && !isCutsceneComplete)
+            if (bed != null)
             {
-                string sleep = "Early";
-                if (SingletonBehaviour<DayCycle>.Instance.Time.Hour >= 18 || SingletonBehaviour<DayCycle>.Instance.Time.Hour < 6)
+                PolygamyPlugin.logger.LogInfo("[PolyGamy Mod v0.0.4 UpdatedByWerri] RequestSleep: all ok!");
+            }
+            try
+            {
+                if (isMarriageBed && !isCutsceneComplete)
                 {
-                    sleep = "Sleep";
-                }
+                    string sleep = "Early";
+                    if (SingletonBehaviour<DayCycle>.Instance.Time.Hour >= 18 || SingletonBehaviour<DayCycle>.Instance.Time.Hour < 6)
+                    {
+                        sleep = "Sleep";
+                    }
 
-                LocalizedDialogueTree localizedDialogueTree0 = new LocalizedDialogueTree
-                {
-                    npc = null
-                };
+                    LocalizedDialogueTree localizedDialogueTree0 = new LocalizedDialogueTree
+                    {
+                        npc = null
+                    };
 
 
-                string name0 = "Bed";
-                DialogueNode dialogueNode0 = new DialogueNode();
-                dialogueNode0.dialogueText = new List<string>
+                    string name0 = "Bed";
+                    DialogueNode dialogueNode0 = new DialogueNode();
+                    dialogueNode0.dialogueText = new List<string>
                 {
                     "What do you want to do?"
                 };
 
-                Dictionary<int, Response> dictionary0 = new Dictionary<int, Response>();
+                    Dictionary<int, Response> dictionary0 = new Dictionary<int, Response>();
 
-                Response response01 = new Response();
-                response01.responseText = (() => "Sleep");
-                response01.action = delegate ()
-                {
-                    localizedDialogueTree0.Talk(sleep, true, null);
-                };
-                dictionary0.Add(0, response01);
+                    Response response01 = new Response();
+                    response01.responseText = (() => "Sleep");
+                    response01.action = delegate ()
+                    {
+                        localizedDialogueTree0.Talk(sleep, true, null);
+                    };
+                    dictionary0.Add(0, response01);
 
-                Response response02 = new Response();
-                response02.responseText = (() => "Change main spouse");
-                response02.action = delegate ()
-                {
-                    localizedDialogueTree0.Talk("ChangeMainSpouse1", true, null);
-                };
-                dictionary0.Add(1, response02);
-                dialogueNode0.responses = dictionary0;
+                    Response response02 = new Response();
+                    response02.responseText = (() => "Change main spouse");
+                    response02.action = delegate ()
+                    {
+                        localizedDialogueTree0.Talk("ChangeMainSpouse1", true, null);
+                    };
+                    dictionary0.Add(1, response02);
+                    dialogueNode0.responses = dictionary0;
 
-                Response response03 = new Response();
-                response03.responseText = (() => "Nothing");
-                response03.action = delegate ()
-                {
-                    DialogueController.Instance.CancelDialogue();
-                };
-                dictionary0.Add(2, response03);
-                dialogueNode0.responses = dictionary0;
-                localizedDialogueTree0.AddNode(name0, dialogueNode0);
+                    Response response03 = new Response();
+                    response03.responseText = (() => "Nothing");
+                    response03.action = delegate ()
+                    {
+                        DialogueController.Instance.CancelDialogue();
+                    };
+                    dictionary0.Add(2, response03);
+                    dialogueNode0.responses = dictionary0;
+                    localizedDialogueTree0.AddNode(name0, dialogueNode0);
 
 
-                string name1 = "Sleep";
-                DialogueNode dialogueNode1 = new DialogueNode();
-                dialogueNode1.dialogueText = new List<string>
+                    string name1 = "Sleep";
+                    DialogueNode dialogueNode1 = new DialogueNode();
+                    dialogueNode1.dialogueText = new List<string>
                 {
                     ScriptLocalization.SleepRequestSpouse
                 };
-                Dictionary<int, Response> dictionary1 = new Dictionary<int, Response>();
+                    Dictionary<int, Response> dictionary1 = new Dictionary<int, Response>();
 
-                Response response04 = new Response();
-                response04.responseText = (() => ScriptLocalization.Yes);
-                response04.action = delegate ()
-                {
-                    marriageOvernightCutscene.Begin();
-                    DialogueController.Instance.CancelDialogue();
-                };
-                dictionary1.Add(0, response04);
+                    Response response04 = new Response();
+                    response04.responseText = (() => ScriptLocalization.Yes);
+                    response04.action = delegate ()
+                    {
+                        marriageOvernightCutscene.Begin();
+                        DialogueController.Instance.CancelDialogue();
+                    };
+                    dictionary1.Add(0, response04);
 
-                Response response05 = new Response();
-                response05.responseText = (() => ScriptLocalization.No);
-                response05.action = delegate ()
-                {
-                    DialogueController.Instance.CancelDialogue();
-                };
-                dictionary1.Add(1, response05);
+                    Response response05 = new Response();
+                    response05.responseText = (() => ScriptLocalization.No);
+                    response05.action = delegate ()
+                    {
+                        DialogueController.Instance.CancelDialogue();
+                    };
+                    dictionary1.Add(1, response05);
 
-                dialogueNode1.responses = dictionary1;
-                localizedDialogueTree0.AddNode(name1, dialogueNode1);
+                    dialogueNode1.responses = dictionary1;
+                    localizedDialogueTree0.AddNode(name1, dialogueNode1);
 
 
-                string name2 = "Early";
-                DialogueNode dialogueNode2 = new DialogueNode();
-                dialogueNode2.dialogueText = new List<string>
+                    string name2 = "Early";
+                    DialogueNode dialogueNode2 = new DialogueNode();
+                    dialogueNode2.dialogueText = new List<string>
                 {
                     ScriptLocalization.TooEarlyToSleep
                 };
-                localizedDialogueTree0.AddNode(name2, dialogueNode2);
+                    localizedDialogueTree0.AddNode(name2, dialogueNode2);
 
 
-                string name3 = "ChangeMainSpouse";
+                    string name3 = "ChangeMainSpouse";
 
-                List<string> spouses = new List<string>();
-                Dictionary<int, Response> dictionary2 = new Dictionary<int, Response>();
-                int i = 0;
-                int page = 1;
-                string page_name;
+                    List<string> spouses = new List<string>();
+                    Dictionary<int, Response> dictionary2 = new Dictionary<int, Response>();
+                    int i = 0;
+                    int page = 1;
+                    string page_name;
 
-                foreach (var npcai in SingletonBehaviour<NPCManager>.Instance._npcs.Values.Where(npcai => SingletonBehaviour<GameSave>.Instance.GetProgressBoolCharacter("MarriedTo" + npcai.OriginalName)))
-                {
-                    spouses.Add(npcai.OriginalName);
-                }
-                foreach (var name in spouses)
-                {
-                    if (i == 3)
+                    foreach (var npcai in SingletonBehaviour<NPCManager>.Instance._npcs.Values.Where(npcai => SingletonBehaviour<GameSave>.Instance.GetProgressBoolCharacter("MarriedTo" + npcai.OriginalName)))
                     {
-                        DialogueNode dialogueNode3 = new DialogueNode();
-                        dialogueNode3.dialogueText = new List<string>
+                        spouses.Add(npcai.OriginalName);
+                    }
+                    foreach (var name in spouses)
+                    {
+                        if (i == 3)
+                        {
+                            DialogueNode dialogueNode3 = new DialogueNode();
+                            dialogueNode3.dialogueText = new List<string>
                             {
                                 "Who will be the main spouse?"
                             };
-                        page_name = name3 + page;
-                        page += 1;
-                        string next_page_name = name3 + page;
+                            page_name = name3 + page;
+                            page += 1;
+                            string next_page_name = name3 + page;
 
-                        Response next_page = new Response();
-                        next_page.responseText = (() => "Next");
-                        next_page.action = delegate ()
+                            Response next_page = new Response();
+                            next_page.responseText = (() => "Next");
+                            next_page.action = delegate ()
+                            {
+                                localizedDialogueTree0.Talk(next_page_name, true, null);
+                            };
+                            dictionary2.Add(i, next_page);
+                            dialogueNode3.responses = dictionary2;
+                            localizedDialogueTree0.AddNode(page_name, dialogueNode3);
+
+
+                            i = 0;
+                            dictionary2 = new Dictionary<int, Response>();
+                        }
+
+                        Response response = new Response();
+                        response.responseText = (() => name);
+                        response.action = delegate ()
                         {
-                            localizedDialogueTree0.Talk(next_page_name, true, null);
+                            string current_spouse = SingletonBehaviour<GameSave>.Instance.GetProgressStringCharacter("MarriedWith");
+
+                            SingletonBehaviour<GameSave>.Instance.SetProgressBoolWorld(current_spouse + "MarriedWalkPath", false, true);
+                            NPCAI realNPC = SingletonBehaviour<NPCManager>.Instance.GetRealNPC(current_spouse);
+                            realNPC.GeneratePath();
+                            SingletonBehaviour<NPCManager>.Instance.StartNPCPath(realNPC);
+
+                            SingletonBehaviour<GameSave>.Instance.SetProgressStringCharacter("MarriedWith", name);
+                            localizedDialogueTree0.Talk("Reenter", true, null);
                         };
-                        dictionary2.Add(i, next_page);
-                        dialogueNode3.responses = dictionary2;
-                        localizedDialogueTree0.AddNode(page_name, dialogueNode3);
+                        dictionary2.Add(i, response);
+                        i += 1;
 
-
-                        i = 0;
-                        dictionary2 = new Dictionary<int, Response>();
                     }
 
-                    Response response = new Response();
-                    response.responseText = (() => name);
-                    response.action = delegate ()
-                    {
-                        string current_spouse = SingletonBehaviour<GameSave>.Instance.GetProgressStringCharacter("MarriedWith");
-
-                        SingletonBehaviour<GameSave>.Instance.SetProgressBoolWorld(current_spouse + "MarriedWalkPath", false, true);
-                        NPCAI realNPC = SingletonBehaviour<NPCManager>.Instance.GetRealNPC(current_spouse);
-                        realNPC.GeneratePath();
-                        SingletonBehaviour<NPCManager>.Instance.StartNPCPath(realNPC);
-
-                        SingletonBehaviour<GameSave>.Instance.SetProgressStringCharacter("MarriedWith", name);
-                        localizedDialogueTree0.Talk("Reenter", true, null);
-                    };
-                    dictionary2.Add(i, response);
-                    i += 1;
-
-                }
-
-                DialogueNode dialogueNode4 = new DialogueNode();
-                dialogueNode4.dialogueText = new List<string>
+                    DialogueNode dialogueNode4 = new DialogueNode();
+                    dialogueNode4.dialogueText = new List<string>
                 {
                     "Who will be the main spouse?"
                 };
-                page_name = name3 + page;
+                    page_name = name3 + page;
 
-                Response nevermind = new Response();
-                nevermind.responseText = (() => "Nevermind");
-                nevermind.action = delegate ()
-                {
-                    DialogueController.Instance.CancelDialogue();
-                };
-                dictionary2.Add(i, nevermind);
-                dialogueNode4.responses = dictionary2;
-                localizedDialogueTree0.AddNode(page_name, dialogueNode4);
+                    Response nevermind = new Response();
+                    nevermind.responseText = (() => "Nevermind");
+                    nevermind.action = delegate ()
+                    {
+                        DialogueController.Instance.CancelDialogue();
+                    };
+                    dictionary2.Add(i, nevermind);
+                    dialogueNode4.responses = dictionary2;
+                    localizedDialogueTree0.AddNode(page_name, dialogueNode4);
 
-                string name4 = "Reenter";
-                DialogueNode dialogueNode5 = new DialogueNode();
-                dialogueNode5.dialogueText = new List<string>
+                    string name4 = "Reenter";
+                    DialogueNode dialogueNode5 = new DialogueNode();
+                    dialogueNode5.dialogueText = new List<string>
                 {
                     "Re-enter the house to apply changes."
                 };
-                localizedDialogueTree0.AddNode(name4, dialogueNode5);
+                    localizedDialogueTree0.AddNode(name4, dialogueNode5);
 
-                localizedDialogueTree0.Talk("Bed", true, null);
-                return true;
+                    localizedDialogueTree0.Talk("Bed", true, null);
+                    return true;
+                }
+                else
+                {
+                    return true;
+                }
             }
-            else
+            catch (Exception ex)
             {
+                write_exception_to_console(ex);
                 return true;
             }
         }
@@ -1366,140 +1630,167 @@ public class PolygamyPlugin : BaseUnityPlugin
     {
         private static LocalizedDialogueTree HandleConfirm(LocalizedDialogueTree localizedDialogueTree0, string name, string new_main)
         {
-            string name1 = "ConfirmDivorce";
-            DialogueNode dialogueNode2 = new DialogueNode();
-            dialogueNode2.dialogueText = new List<string>
+            try
+            {
+                if (localizedDialogueTree0 != null)
+                {
+                    PolygamyPlugin.logger.LogInfo("[PolyGamy Mod v0.0.4 UpdatedByWerri Bernard]: HandleConfirm confirmDivorce!");
+                }
+
+                string name1 = "ConfirmDivorce";
+                DialogueNode dialogueNode2 = new DialogueNode();
+                dialogueNode2.dialogueText = new List<string>
             {
                 $"Are you sure you want to divorce {name}?"
             };
-            Dictionary<int, Response> dictionary1 = new Dictionary<int, Response>();
+                Dictionary<int, Response> dictionary1 = new Dictionary<int, Response>();
 
-            Response response01 = new Response();
-            response01.responseText = (() => ScriptLocalization.Yes);
-            response01.action = delegate ()
-            {
-                Utilities.UnlockAcheivement(131);
-                if (SingletonBehaviour<GameSave>.Instance.GetProgressStringCharacter("MarriedWith") == name)
+                Response response01 = new Response();
+                response01.responseText = (() => ScriptLocalization.Yes);
+                response01.action = delegate ()
                 {
-                    SingletonBehaviour<GameSave>.Instance.SetProgressStringCharacter("MarriedWith", new_main);
-                }
-                SingletonBehaviour<GameSave>.Instance.SetProgressBoolCharacter("MarriedTo" + name, false);
+                    Utilities.UnlockAcheivement(131);
+                    if (SingletonBehaviour<GameSave>.Instance.GetProgressStringCharacter("MarriedWith") == name)
+                    {
+                        SingletonBehaviour<GameSave>.Instance.SetProgressStringCharacter("MarriedWith", new_main);
+                    }
+                    SingletonBehaviour<GameSave>.Instance.SetProgressBoolCharacter("MarriedTo" + name, false);
 
-                NPCAI realNPC = SingletonBehaviour<NPCManager>.Instance.GetRealNPC(name);
-                realNPC.GeneratePath();
-                SingletonBehaviour<NPCManager>.Instance.StartNPCPath(realNPC);
-                GameSave.CurrentCharacter.Relationships[name] = 40f;
-                SingletonBehaviour<NPCManager>.Instance.GetRealNPC(name).GenerateCycle(false);
-            };
-            dictionary1.Add(0, response01);
+                    NPCAI realNPC = SingletonBehaviour<NPCManager>.Instance.GetRealNPC(name);
+                    realNPC.GeneratePath();
+                    SingletonBehaviour<NPCManager>.Instance.StartNPCPath(realNPC);
+                    GameSave.CurrentCharacter.Relationships[name] = 40f;
+                    SingletonBehaviour<NPCManager>.Instance.GetRealNPC(name).GenerateCycle(false);
+                };
+                dictionary1.Add(0, response01);
 
-            Response response05 = new Response();
-            response05.responseText = (() => ScriptLocalization.No);
-            response05.action = delegate ()
+                Response response05 = new Response();
+                response05.responseText = (() => ScriptLocalization.No);
+                response05.action = delegate ()
+                {
+                    DialogueController.Instance.CancelDialogue();
+                };
+                dictionary1.Add(1, response05);
+
+                dialogueNode2.responses = dictionary1;
+                localizedDialogueTree0.AddNode(name1, dialogueNode2);
+                return localizedDialogueTree0;
+            }
+            catch (Exception ex)
             {
-                DialogueController.Instance.CancelDialogue();
-            };
-            dictionary1.Add(1, response05);
-
-            dialogueNode2.responses = dictionary1;
-            localizedDialogueTree0.AddNode(name1, dialogueNode2);
-            return localizedDialogueTree0;
+                write_exception_to_console(ex);
+                return localizedDialogueTree0;
+            }
         }
 
         private static bool Prefix()
         {
-            LocalizedDialogueTree localizedDialogueTree0 = new LocalizedDialogueTree
+            try
             {
-                npc = null
-            };
-
-            string name0 = "Divorce";
-
-            List<string> spouses = new List<string>();
-            Dictionary<int, Response> dictionary0 = new Dictionary<int, Response>();
-            int i = 0;
-            int page = 1;
-            string page_name;
-            int count = 0;
-            string new_main;
-
-            foreach (var npcai in SingletonBehaviour<NPCManager>.Instance._npcs.Values.Where(npcai => SingletonBehaviour<GameSave>.Instance.GetProgressBoolCharacter("MarriedTo" + npcai.OriginalName)))
-            {
-                spouses.Add(npcai.OriginalName);
-                count += 1;
-            }
-            if (count <= 1)
-            {
-                return true;
-            }
-            foreach (var name in spouses)
-            {
-                if (i == 3)
+                if (true)
                 {
-                    DialogueNode dialogueNode0 = new DialogueNode();
-                    dialogueNode0.dialogueText = new List<string>
+                    PolygamyPlugin.logger.LogInfo("[PolyGamy Mod v0.0.4 UpdatedByWerri Bernard]: Divorce Prefix multiple spouses!");
+                }
+
+                LocalizedDialogueTree localizedDialogueTree0 = new LocalizedDialogueTree
+                {
+                    npc = null
+                };
+
+                string name0 = "Divorce";
+
+                List<string> spouses = new List<string>();
+                Dictionary<int, Response> dictionary0 = new Dictionary<int, Response>();
+                int i = 0;
+                int page = 1;
+                string page_name;
+                int count = 0;
+                string new_main;
+
+                foreach (var npcai in SingletonBehaviour<NPCManager>.Instance._npcs.Values.Where(npcai => SingletonBehaviour<GameSave>.Instance.GetProgressBoolCharacter("MarriedTo" + npcai.OriginalName)))
+                {
+                    spouses.Add(npcai.OriginalName);
+                    count += 1;
+                }
+                if (count <= 1)
+                {
+                    return true;
+                }
+                foreach (var name in spouses)
+                {
+                    if (i == 3)
+                    {
+                        DialogueNode dialogueNode0 = new DialogueNode();
+                        dialogueNode0.dialogueText = new List<string>
                     {
                         "Who do you want to divorce?"
                     };
-                    page_name = name0 + page;
-                    page += 1;
-                    string next_page_name = name0 + page;
+                        page_name = name0 + page;
+                        page += 1;
+                        string next_page_name = name0 + page;
 
-                    Response next_page = new Response();
-                    next_page.responseText = (() => "Next");
-                    next_page.action = delegate ()
+                        Response next_page = new Response();
+                        next_page.responseText = (() => "Next");
+                        next_page.action = delegate ()
+                        {
+                            localizedDialogueTree0.Talk(next_page_name, true, null);
+                        };
+                        dictionary0.Add(i, next_page);
+                        dialogueNode0.responses = dictionary0;
+                        localizedDialogueTree0.AddNode(page_name, dialogueNode0);
+
+
+                        i = 0;
+                        dictionary0 = new Dictionary<int, Response>();
+                    }
+
+                    Response response = new Response();
+                    response.responseText = (() => name);
+                    response.action = delegate ()
                     {
-                        localizedDialogueTree0.Talk(next_page_name, true, null);
+                        if (spouses[0] == name)
+                        {
+                            new_main = spouses[1];
+                        }
+                        else
+                        {
+                            new_main = spouses[0];
+                        }
+
+                        localizedDialogueTree0 = HandleConfirm(localizedDialogueTree0, name, new_main);
+                        localizedDialogueTree0.Talk("ConfirmDivorce", true, null);
                     };
-                    dictionary0.Add(i, next_page);
-                    dialogueNode0.responses = dictionary0;
-                    localizedDialogueTree0.AddNode(page_name, dialogueNode0);
+                    dictionary0.Add(i, response);
+                    i += 1;
 
-
-                    i = 0;
-                    dictionary0 = new Dictionary<int, Response>();
                 }
 
-                Response response = new Response();
-                response.responseText = (() => name);
-                response.action = delegate ()
-                {
-                    if (spouses[0] == name)
-                    {
-                        new_main = spouses[1];
-                    } else
-                    {
-                        new_main = spouses[0];
-                    }
-                    
-                    localizedDialogueTree0 = HandleConfirm(localizedDialogueTree0, name, new_main);
-                    localizedDialogueTree0.Talk("ConfirmDivorce", true, null);
-                };
-                dictionary0.Add(i, response);
-                i += 1;
-
-            }
-
-            DialogueNode dialogueNode1 = new DialogueNode();
-            dialogueNode1.dialogueText = new List<string>
+                DialogueNode dialogueNode1 = new DialogueNode();
+                dialogueNode1.dialogueText = new List<string>
             {
                 "Who do you want to divorce?"
             };
-            page_name = name0 + page;
+                page_name = name0 + page;
 
-            Response nevermind = new Response();
-            nevermind.responseText = (() => "Nevermind");
-            nevermind.action = delegate ()
+                Response nevermind = new Response();
+                nevermind.responseText = (() => "Nevermind");
+                nevermind.action = delegate ()
+                {
+                    DialogueController.Instance.CancelDialogue();
+                };
+                dictionary0.Add(i, nevermind);
+                dialogueNode1.responses = dictionary0;
+                localizedDialogueTree0.AddNode(page_name, dialogueNode1);
+
+                localizedDialogueTree0.Talk("Divorce1", true, null);
+
+                return false;
+            }
+            catch (Exception ex)
             {
-                DialogueController.Instance.CancelDialogue();
-            };
-            dictionary0.Add(i, nevermind);
-            dialogueNode1.responses = dictionary0;
-            localizedDialogueTree0.AddNode(page_name, dialogueNode1);
-
-            localizedDialogueTree0.Talk("Divorce1", true, null);
-
-            return false;
+                write_exception_to_console(ex);
+                return false;
+            }
         }
     }
 }
